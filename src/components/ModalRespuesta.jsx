@@ -62,21 +62,21 @@ export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 flex items-end justify-center"
+        className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6"
         onClick={e => e.target === e.currentTarget && onClose()}
       >
         <motion.div
-          initial={{ y: '100%' }}
-          animate={{ y: 0 }}
-          exit={{ y: '100%' }}
+          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.98 }}
           transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-          className="bg-surface w-full max-w-md rounded-t-3xl shadow-paper-lg p-6 pb-10"
+          className="bg-surface w-full max-w-md rounded-3xl shadow-paper-lg p-6 pb-8 max-h-[85vh] overflow-y-auto overscroll-contain"
         >
           {done ? (
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="text-center py-8"
+              className="min-h-[280px] flex flex-col items-center justify-center text-center"
             >
               <div className="text-6xl mb-3">🎉</div>
               <h3 className="font-display text-2xl font-bold text-ink">¡Enviado!</h3>
