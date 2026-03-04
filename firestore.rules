@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Only allow access to the 2 registered users.
+    // Replace UID_1 and UID_2 with the real Firebase UIDs after creating the accounts.
+    function isAllowed() {
+      return request.auth != null && 
+             request.auth.uid in ['mw9F2XBgsgSNt0v3wgSmWDrIYD62', 'K2v0o3e6heW1laHh0PZ4SQ05juA3'];
+    }
+
+    match /{document=**} {
+      allow read, write: if isAllowed();
+    }
+  }
+}

@@ -1,0 +1,30 @@
+Ve a Firebase Console e inicia sesión con una cuenta de Google.
+Haz clic en "Crear un proyecto" (ponle de nombre "Retos Diarios", es gratis).
+En el menú izquierdo, ve a Compilación > Authentication y habilita el método de inicio de sesión por Correo electrónico/contraseña.
+Ahí mismo en Authentication, ve a la pestaña "Usuarios" y añade manualmente dos usuarios reales (tu correo y contraseña, y los de tu pareja). ¡Estos serán los que uséis para entrar!
+Ve a Compilación > Firestore Database y haz clic en "Crear base de datos" (puedes elegir ubicación EUR y empezar en modo producción).
+Ve a Reglas en Firestore y pega el contenido del archivo 
+
+firestore.rules
+ que está en tu proyecto (sustituyendo "UID1" y "UID2" por los IDs reales de los usuarios que acabas de crear).
+Ve a Compilación > Storage y actívalo también para poder subir los fotos.
+Paso 2: Obtener las claves de tu proyecto
+En Firebase, ve a la "Configuración del proyecto" (el engranaje arriba a la izquierda).
+Abajo del todo, en "Tus aplicaciones", añade una aplicación Web (</>). Ponle un nombre y dale a "Registrar" (desmarca la casilla de Hosting).
+Te aparecerá un bloque de código con unas credenciales (apiKey, authDomain, etc.). Cópialas.
+Paso 3: Subir el código a Internet (Vercel)
+Créate una cuenta en GitHub (si no tienes) y sube allí toda la carpeta de tu proyecto Retos_Diarios.
+Créate una cuenta en Vercel (puedes registrarte usando tu GitHub).
+Haz clic en "Add New Project" y selecciona el repositorio de GitHub que acabas de subir.
+Antes de darle a "Deploy" (desplegar), abre la sección Environment Variables (Variables de entorno).
+Aquí tienes que pegar las claves que copiaste de Firebase según el esquema que tienes en el archivo 
+
+.env.example
+ de tu proyecto. Quedaría así:
+Nombre: VITE_FIREBASE_API_KEY, Valor: tu_api_key_aqui
+Nombre: VITE_FIREBASE_AUTH_DOMAIN, Valor: tu_proyecto.firebaseapp.com
+(Y lo mismo con las 4 claves restantes...)
+Haz clic en Deploy.
+¡Y ya está! En un minuto, Vercel te dará un enlace único (algo como https://retos-diarios-algo.vercel.app).
+
+Ese es el enlace que le tienes que pasar a tu pareja. Ambos podréis entrar desde el navegador del móvil, darle a opciones y pulsar "Añadir a la pantalla de inicio" para que se instale y se vea como una aplicación nativa real.

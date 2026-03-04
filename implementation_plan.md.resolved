@@ -1,0 +1,149 @@
+# 🎯 Retos Diarios — Implementation Plan
+
+Una app web privada para dos personas donde cada día sale un reto aleatorio de una lista personalizable, ambos suben su respuesta con fotos/texto, y todo se guarda en un historial visual compartido.
+
+## Proposed Changes
+
+### Stack
+- **React 18 + Vite** — SPA con React Router v6
+- **Tailwind CSS v3** — utilidades + tema personalizado
+- **Framer Motion** — animaciones (flip de carta, confetti, bola bingo)
+- **Firebase 10** — Auth, Firestore, Storage
+- **date-fns-tz** — zona horaria Europe/Madrid
+- **Lucide React** — iconos
+
+---
+
+### Project Root `c:\Users\ivand\Retos_Diarios\`
+
+#### [NEW] Project scaffold (Vite React)
+- Ejecutar `npx create-vite@latest . --template react` en modo non-interactive
+
+---
+
+### Config files
+
+#### [NEW] `tailwind.config.js`
+Tema extendido con colores personalizados (coral `#E8614A`, mostaza `#F0B429`, crema `#FDF6EC`, etc.), fuentes `Playfair Display` y `DM Sans`.
+
+#### [NEW] `src/firebase.js`
+Config de Firebase con variables de entorno. Inicialización de `app`, `auth`, `db` (Firestore con persistencia offline), `storage`.
+
+#### [NEW] `.env.example`
+Variables VITE_FIREBASE_* para que el usuario rellene sus credenciales.
+
+#### [NEW] `firestore.rules`
+Solo usuarios autenticados cuyos UID estén en la lista de 2 pueden leer/escribir.
+
+---
+
+### Auth
+
+#### [NEW] `src/contexts/AuthContext.jsx`
+Context con `currentUser`, `login()`, `logout()`. Hook `useAuth()`.
+
+#### [NEW] `src/pages/LoginPage.jsx`
+Pantalla de login con email/contraseña. Diseño mobile-first con paleta crema/coral.
+
+---
+
+### Services (src/services/)
+
+#### [NEW] `retosService.js`
+- `getRetoDiario(fecha)` — obtiene/crea el reto del día en Firestore
+- `seleccionarRetoAleatorio()` — selecciona un reto no usado, o reinicia el ciclo
+- `marcarUsado(retoId)` — marca `usado: true`
+
+#### [NEW] `postsService.js`
+- `getPost(fecha)` — obtiene el post del día
+- `subirRespuesta(fecha, usuarioId, texto, archivos)` — sube fotos a Storage y actualiza el post en Firestore
+- `getPosts(filtros)` — obtiene posts para el historial
+
+#### [NEW] `usuariosService.js`
+- `getUserProfile(uid)` — obtiene perfil
+- `updateProfile(uid, data)` — actualiza nombre/emoji/color
+
+---
+
+### Pages (src/pages/)
+
+#### [NEW] `HomePage.jsx`
+- Consulta `reto_diario` del día actual (Europe/Madrid)
+- Si no existe → animación bola de bingo girando (Framer Motion) → selecciona reto aleatorio
+- Card central con flip animation (CSS 3D vía Framer Motion)
+- Estado: completado por mí / por mi pareja
+- Botón "Subir respuesta" → abre `ModalRespuesta`
+- Contador de racha 🔥
+
+#### [NEW] `HistorialPage.jsx`
+- Grid masonry de posts
+- Estadísticas en cabecera (racha, total completados, quién crea más retos)
+- Filtros: mes, categoría, "completados por los dos"
+- Click → vista expandida con fotos de ambos en paralelo
+
+#### [NEW] `AnadirRetoPage.jsx`
+- Formulario: texto (máx 200 chars) + selector de categoría con emojis
+- Preview del reto en Card estilo bingo
+- Animación bola entrando al bombo al enviar
+- Lista de "mis retos" creados
+
+#### [NEW] `PerfilPage.jsx`
+- Nombre, emoji, color de acento
+- Estadísticas personales
+- Configuración de nombres de la pareja
+- Botón cerrar sesión
+
+---
+
+### Components (src/components/)
+
+#### [NEW] `BottomNav.jsx`
+Navegación inferior mobile-first con 4 tabs: Hoy / Historial / Añadir / Perfil.
+
+#### [NEW] `ModalRespuesta.jsx`
+- Upload de hasta 4 fotos o 1 vídeo (50MB)
+- Preview de imágenes
+- Textarea para texto
+- Confetti animation al enviar (canvas-confetti)
+
+#### [NEW] `BingoBall.jsx`
+Esfera animada 3D (CSS + Framer Motion) que gira mientras selecciona el reto.
+
+#### [NEW] `RetoCard.jsx`
+Card con flip animation; anverso (texto del reto) / reverso decorativo.
+
+#### [NEW] `PostCard.jsx`
+Tarjeta de historial con miniaturas, badges de completado.
+
+---
+
+### Seed
+
+#### [NEW] `scripts/seed.js`
+Script Node.js que carga 60 retos de ejemplo en Firestore (15 foto, 15 texto, 15 tontería, 15 romántico). Ejecutar con `node scripts/seed.js` tras configurar Firebase Admin SDK.
+
+---
+
+### Docs
+
+#### [NEW] `README.md`
+Instrucciones de instalación, configuración de Firebase, despliegue en Vercel y Firebase Hosting.
+
+---
+
+## Verification Plan
+
+### Browser Testing (manual visual)
+
+Lanzar con `npm run dev` y abrir `http://localhost:5173`:
+
+1. **Login**: Introducir email/contraseña de prueba → debe redirigir a home.
+2. **Bola de bingo**: En home, si no hay reto hoy → ver animación de bola girando → aparecer card con flip animation.
+3. **Subir respuesta**: Click "Subir mi respuesta" → modal abre → seleccionar imagen local → preview aparece → "Enviar" → animación confetti.
+4. **Historial**: Navegar a Historial → ver grid de posts → click en tarjeta → vista expandida con fotos en paralelo.
+5. **Añadir reto**: Navegar a Añadir → escribir texto → seleccionar categoría → submit → animación bola al bombo → toast.
+6. **Perfil**: Navegar a Perfil → cambiar nombre → guardar → ver reflejo en la navbar.
+7. **Mobile**: Abrir DevTools (F12) → simular iPhone 14 Pro (390px) → verificar que toda la UI cabe correctamente.
+
+> [!NOTE]
+> Como Firebase requiere credenciales reales, el proyecto incluirá un `.env.example` y README claro. La app funcionará con cualquier proyecto Firebase gratuito del usuario.
