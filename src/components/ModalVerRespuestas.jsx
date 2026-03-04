@@ -1,8 +1,52 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Image as ImageIcon } from 'lucide-react'
+import { getUsuario } from '../services/firebaseService'
 
 export default function ModalVerRespuestas({ post, retoDiario, onClose }) {
+  const [nombresPorUid, setNombresPorUid] = useState({})
+
+  useEffect(() => {
+    let alive = true
+
+    async function loadNombres() {
+      const uids = [...new Set((post?.respuestas || []).map(r => r?.usuarioId).filter(Boolean))]
+      if (uids.length === 0) {
+        if (alive) setNombresPorUid({})
+        return
+      }
+
+      const pairs = await Promise.all(
+        uids.map(async (uid) => {
+          const perfil = await getUsuario(uid)
+          return [uid, perfil?.nombre || null]
+        })
+      )
+
+      if (!alive) return
+      const map = {}
+      for (const [uid, nombre] of pairs) {
+        if (nombre) map[uid] = nombre
+      }
+      setNombresPorUid(map)
+    }
+
+    loadNombres().catch(() => {
+      if (alive) setNombresPorUid({})
+    })
+
+    return () => { alive = false }
+  }, [post?.id, post?.respuestas])
+
+  function resolveNombre(resp) {
+    if (!resp) return ''
+    const byUid = resp.usuarioId ? nombresPorUid[resp.usuarioId] : null
+    if (byUid) return byUid
+    const raw = (resp.usuarioNombre || '').trim()
+    if (raw && raw.toLowerCase() !== 'usuario') return raw
+    return 'Usuario'
+  }
+
   if (!post) return null
 
   const resp1 = post.respuestas?.[0]
@@ -14,15 +58,15 @@ export default function ModalVerRespuestas({ post, retoDiario, onClose }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 flex items-end justify-center"
+        className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6"
         onClick={e => e.target === e.currentTarget && onClose()}
       >
         <motion.div
-          initial={{ y: '100%' }}
-          animate={{ y: 0 }}
-          exit={{ y: '100%' }}
+          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.98 }}
           transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-          className="bg-surface w-full max-w-md rounded-t-3xl shadow-paper-lg p-6 pb-10 max-h-[90vh] overflow-y-auto"
+          className="bg-surface w-full max-w-md rounded-3xl shadow-paper-lg p-6 pb-8 max-h-[85vh] overflow-y-auto overscroll-contain"
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display text-xl font-semibold text-ink">Respuestas</h3>
@@ -38,8 +82,8 @@ export default function ModalVerRespuestas({ post, retoDiario, onClose }) {
 
           {/* Two columns */}
           <div className="grid grid-cols-2 gap-3">
-            <RespuestaColumn resp={resp1} />
-            <RespuestaColumn resp={resp2} />
+            <RespuestaColumn resp={resp1} nombre={resolveNombre(resp1)} />
+            <RespuestaColumn resp={resp2} nombre={resolveNombre(resp2)} />
           </div>
 
           {post.completadoTotal && (
@@ -54,7 +98,7 @@ export default function ModalVerRespuestas({ post, retoDiario, onClose }) {
   )
 }
 
-function RespuestaColumn({ resp }) {
+function RespuestaColumn({ resp, nombre }) {
   if (!resp) {
     return (
       <div className="bg-cream rounded-2xl p-4 flex flex-col items-center justify-center min-h-32 gap-2">
@@ -69,7 +113,7 @@ function RespuestaColumn({ resp }) {
       {/* Avatar */}
       <div className="flex items-center gap-2">
         <span className="text-xl">{resp.emoji}</span>
-        <span className="font-body text-xs font-semibold text-ink/70 truncate">{resp.usuarioNombre}</span>
+        <span className="font-body text-xs font-semibold text-ink/70 truncate">{nombre || resp.usuarioNombre}</span>
       </div>
 
       {/* Photos */}

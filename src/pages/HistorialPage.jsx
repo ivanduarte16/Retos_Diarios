@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Filter, X, Trophy, Flame, Star, Heart, Calendar } from 'lucide-react'
-import { getPosts, getStats } from '../services/firebaseService'
+import { getPosts, getStats, getUsuario } from '../services/firebaseService'
 
 const CATEGORIAS = [
   { id: 'all', label: 'Todos', emoji: '✨' },
@@ -72,6 +72,48 @@ function PostDetail({ post, retoDiario, onClose }) {
   const resp1 = post.respuestas?.[0]
   const resp2 = post.respuestas?.[1]
   const fecha = post.fecha instanceof Date ? post.fecha : post.fecha?.toDate?.() || new Date(post.fecha)
+  const [nombresPorUid, setNombresPorUid] = useState({})
+
+  useEffect(() => {
+    let alive = true
+
+    async function loadNombres() {
+      const uids = [...new Set((post?.respuestas || []).map(r => r?.usuarioId).filter(Boolean))]
+      if (uids.length === 0) {
+        if (alive) setNombresPorUid({})
+        return
+      }
+
+      const pairs = await Promise.all(
+        uids.map(async (uid) => {
+          const perfil = await getUsuario(uid)
+          return [uid, perfil?.nombre || null]
+        })
+      )
+
+      if (!alive) return
+      const map = {}
+      for (const [uid, nombre] of pairs) {
+        if (nombre) map[uid] = nombre
+      }
+      setNombresPorUid(map)
+    }
+
+    loadNombres().catch(() => {
+      if (alive) setNombresPorUid({})
+    })
+
+    return () => { alive = false }
+  }, [post?.id, post?.respuestas])
+
+  function resolveNombre(resp) {
+    if (!resp) return ''
+    const byUid = resp.usuarioId ? nombresPorUid[resp.usuarioId] : null
+    if (byUid) return byUid
+    const raw = (resp.usuarioNombre || '').trim()
+    if (raw && raw.toLowerCase() !== 'usuario') return raw
+    return 'Usuario'
+  }
 
   return (
     <AnimatePresence>
@@ -105,7 +147,7 @@ function PostDetail({ post, retoDiario, onClose }) {
                 <div key={i} className="space-y-2">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xl">{resp.emoji}</span>
-                    <span className="font-body text-sm font-semibold text-ink">{resp.usuarioNombre}</span>
+                    <span className="font-body text-sm font-semibold text-ink">{resolveNombre(resp)}</span>
                   </div>
                   {resp.fotos?.map((url, j) => (
                     <img key={j} src={url} alt="" className="w-full rounded-xl object-cover" />

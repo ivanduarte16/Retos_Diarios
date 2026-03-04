@@ -34,7 +34,7 @@ export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
     try {
       const usuario = {
         uid: currentUser.uid,
-        nombre: userProfile?.nombre || 'Usuario',
+        nombre: userProfile?.nombre || ((currentUser.email || '').split('@')[0] || 'Usuario'),
         emoji: userProfile?.emoji || '😊',
       }
       await subirRespuesta(getFechaHoy(), usuario, texto, archivos)

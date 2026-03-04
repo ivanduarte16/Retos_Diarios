@@ -4,7 +4,8 @@ import {
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth'
-import { auth, isDemoMode } from '../firebase'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { auth, db, isDemoMode } from '../firebase'
 
 const AuthContext = createContext(null)
 
@@ -16,6 +17,13 @@ export function useAuth() {
 const DEMO_USERS = {
   'el@demo.com':  { uid: 'user1', email: 'el@demo.com',  nombre: 'Él',  emoji: '🧔', color: '#E8614A' },
   'ella@demo.com':{ uid: 'user2', email: 'ella@demo.com', nombre: 'Ella', emoji: '👩', color: '#F0B429' },
+}
+
+function getDefaultNombre(email) {
+  const local = (email || '').split('@')[0] || 'usuario'
+  const clean = local.replace(/[._-]+/g, ' ').trim()
+  if (!clean) return 'Usuario'
+  return clean.charAt(0).toUpperCase() + clean.slice(1)
 }
 
 export function AuthProvider({ children }) {
@@ -59,9 +67,40 @@ export function AuthProvider({ children }) {
       return
     }
 
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user)
-      setLoading(false)
+
+      if (!user) {
+        setUserProfile(null)
+        setLoading(false)
+        return
+      }
+
+      try {
+        const userRef = doc(db, 'usuarios', user.uid)
+        const snap = await getDoc(userRef)
+
+        if (snap.exists()) {
+          setUserProfile({ id: snap.id, ...snap.data() })
+        } else {
+          const profile = {
+            nombre: getDefaultNombre(user.email),
+            emoji: '😊',
+            color: '#E8614A',
+          }
+          await setDoc(userRef, profile, { merge: true })
+          setUserProfile(profile)
+        }
+      } catch (err) {
+        console.error('Error cargando perfil de usuario', err)
+        setUserProfile({
+          nombre: getDefaultNombre(user.email),
+          emoji: '😊',
+          color: '#E8614A',
+        })
+      } finally {
+        setLoading(false)
+      }
     })
     return unsub
   }, [])
