@@ -1,6 +1,36 @@
 // Demo data store — used when Firebase is not configured
 // All state lives in memory + localStorage
 
+import { formatInTimeZone } from 'date-fns-tz'
+
+const TZ = 'Europe/Madrid'
+
+function getFechaKey(date) {
+  return formatInTimeZone(date, TZ, 'yyyy-MM-dd')
+}
+
+function getRachaActual(completadoKeys) {
+  const today = new Date()
+  const todayKey = getFechaKey(today)
+
+  // If today is still pending, keep the streak running from yesterday.
+  const startOffset = completadoKeys.has(todayKey) ? 0 : 1
+
+  let racha = 0
+  for (let i = startOffset; i < 366; i++) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const key = getFechaKey(d)
+    if (completadoKeys.has(key)) {
+      racha += 1
+    } else {
+      break
+    }
+  }
+
+  return racha
+}
+
 const RETOS_INICIALES = [
   // FOTOS (15)
   { id: 'r1',  texto: 'Mándame un selfie haciendo la mueca más rara que puedas', categoria: 'foto', creadoPor: 'sistema', usado: false },
@@ -308,16 +338,9 @@ class DemoStore {
   getStats() {
     const posts = this.posts
     const completados = posts.filter(p => p.completadoTotal)
-    
-    // racha actual
-    let racha = 0
-    const hoy = new Date()
-    for (let i = 0; i < 365; i++) {
-      const d = new Date(hoy)
-      d.setDate(d.getDate() - i)
-      const key = d.toISOString().slice(0, 10)
-      if (completados.some(p => p.id === key)) { racha++ } else { break }
-    }
+
+    const completadoKeys = new Set(completados.map(p => p.id))
+    const racha = getRachaActual(completadoKeys)
 
     return {
       total: completados.length,

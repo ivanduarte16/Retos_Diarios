@@ -13,6 +13,32 @@ export function getFechaHoy() {
   return formatInTimeZone(new Date(), TZ, 'yyyy-MM-dd')
 }
 
+function getFechaKey(date) {
+  return formatInTimeZone(date, TZ, 'yyyy-MM-dd')
+}
+
+function getRachaActual(completadoKeys) {
+  const today = new Date()
+  const todayKey = getFechaKey(today)
+
+  // If today is not completed yet, keep the streak alive from yesterday.
+  const startOffset = completadoKeys.has(todayKey) ? 0 : 1
+
+  let racha = 0
+  for (let i = startOffset; i < 366; i++) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const key = getFechaKey(d)
+    if (completadoKeys.has(key)) {
+      racha += 1
+    } else {
+      break
+    }
+  }
+
+  return racha
+}
+
 // ─── RETOS SERVICE ──────────────────────────────────────────────────────────
 
 export async function getRetoDiario() {
@@ -167,15 +193,9 @@ export async function getStats() {
   if (isDemoMode) return demoStore.getStats()
   const posts = await getPosts()
   const completados = posts.filter(p => p.completadoTotal)
-  
-  let racha = 0
-  const hoy = new Date()
-  for (let i = 0; i < 365; i++) {
-    const d = new Date(hoy)
-    d.setDate(d.getDate() - i)
-    const key = formatInTimeZone(d, TZ, 'yyyy-MM-dd')
-    if (completados.some(p => p.id === key)) { racha++ } else { break }
-  }
+
+  const completadoKeys = new Set(completados.map(p => p.id))
+  const racha = getRachaActual(completadoKeys)
 
   return { total: completados.length, racha, rachaMax: racha }
 }
