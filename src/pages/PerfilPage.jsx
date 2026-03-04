@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Save, Edit3, User, BarChart2, Heart } from 'lucide-react'
+import { LogOut, Save, Edit3, Heart } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import { getUsuario, updateUsuario, getStats } from '../services/firebaseService'
+import { updateUsuario, getStats } from '../services/firebaseService'
 import { useNavigate } from 'react-router-dom'
 
 const EMOJIS = ['🧔', '👩', '👨', '👩‍🦱', '👨‍🦱', '😎', '🥰', '😍', '🤩', '😊', '🫶', '💪']
@@ -18,19 +18,43 @@ export default function PerfilPage() {
   const [color, setColor] = useState(userProfile?.color || '#E8614A')
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    getStats().then(setStats)
+    getStats()
+      .then(setStats)
+      .catch((e) => {
+        console.error(e)
+        setError('No se pudieron cargar tus estadísticas.')
+      })
   }, [])
 
+  useEffect(() => {
+    setNombre(userProfile?.nombre || '')
+    setEmoji(userProfile?.emoji || '😊')
+    setColor(userProfile?.color || '#E8614A')
+  }, [userProfile?.nombre, userProfile?.emoji, userProfile?.color])
+
   async function handleSave() {
+    if (!nombre.trim()) {
+      setError('El nombre no puede estar vacío.')
+      return
+    }
+
+    setError('')
     setSaving(true)
-    const updated = await updateUsuario(currentUser.uid, { nombre, emoji, color })
-    setUserProfile(prev => ({ ...prev, nombre, emoji, color }))
-    setEditing(false)
-    setSaving(false)
-    setToast('¡Perfil actualizado! ' + emoji)
-    setTimeout(() => setToast(''), 2500)
+    try {
+      await updateUsuario(currentUser.uid, { nombre: nombre.trim(), emoji, color })
+      setUserProfile(prev => ({ ...prev, nombre: nombre.trim(), emoji, color }))
+      setEditing(false)
+      setToast('¡Perfil actualizado! ' + emoji)
+      setTimeout(() => setToast(''), 2500)
+    } catch (e) {
+      console.error(e)
+      setError('No se pudo guardar el perfil. Intenta de nuevo.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleLogout() {
@@ -40,7 +64,6 @@ export default function PerfilPage() {
 
   return (
     <div className="min-h-full bg-cream px-4 pt-6 pb-8">
-      {/* Profile hero */}
       <div className="flex flex-col items-center mb-8">
         <motion.div
           animate={{ scale: [1, 1.05, 1] }}
@@ -61,7 +84,12 @@ export default function PerfilPage() {
         </button>
       </div>
 
-      {/* Stats */}
+      {error && (
+        <div className="card border border-coral/20 text-coral text-sm font-body mb-4">
+          {error}
+        </div>
+      )}
+
       {stats && (
         <div className="grid grid-cols-3 gap-3 mb-6">
           <StatCard label="Retos" value={stats.total} emoji="🎯" />
@@ -70,7 +98,6 @@ export default function PerfilPage() {
         </div>
       )}
 
-      {/* Edit panel */}
       <AnimatePresence>
         {editing && (
           <motion.div
@@ -80,7 +107,7 @@ export default function PerfilPage() {
             className="card mb-5 shadow-paper-lg"
           >
             <h2 className="font-display text-lg font-semibold text-ink mb-4">Editar perfil</h2>
-            
+
             <div className="mb-4">
               <label className="font-body text-xs font-medium text-ink/50 uppercase tracking-wide mb-1 block">
                 Tu nombre
@@ -103,8 +130,7 @@ export default function PerfilPage() {
                     key={e}
                     type="button"
                     onClick={() => setEmoji(e)}
-                    className={`aspect-square rounded-xl text-2xl flex items-center justify-center transition-all
-                      ${emoji === e ? 'bg-coral/20 ring-2 ring-coral scale-110' : 'bg-cream-dark hover:bg-cream'}`}
+                    className={`aspect-square rounded-xl text-2xl flex items-center justify-center transition-all ${emoji === e ? 'bg-coral/20 ring-2 ring-coral scale-110' : 'bg-cream-dark hover:bg-cream'}`}
                   >
                     {e}
                   </button>
@@ -123,8 +149,7 @@ export default function PerfilPage() {
                     type="button"
                     onClick={() => setColor(c)}
                     style={{ backgroundColor: c }}
-                    className={`w-9 h-9 rounded-full flex-shrink-0 transition-all
-                      ${color === c ? 'ring-2 ring-offset-2 ring-ink scale-110' : 'hover:scale-105'}`}
+                    className={`w-9 h-9 rounded-full flex-shrink-0 transition-all ${color === c ? 'ring-2 ring-offset-2 ring-ink scale-110' : 'hover:scale-105'}`}
                   />
                 ))}
               </div>
@@ -151,7 +176,6 @@ export default function PerfilPage() {
         )}
       </AnimatePresence>
 
-      {/* About */}
       <div className="card mb-4">
         <div className="flex items-center gap-2 mb-2">
           <Heart size={16} className="text-coral" fill="currentColor" />
@@ -163,7 +187,6 @@ export default function PerfilPage() {
         </p>
       </div>
 
-      {/* Logout */}
       <motion.button
         whileTap={{ scale: 0.97 }}
         onClick={handleLogout}
@@ -173,16 +196,17 @@ export default function PerfilPage() {
         Cerrar sesión
       </motion.button>
 
-      {/* Toast */}
       <AnimatePresence>
         {toast && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-ink text-white px-4 py-3 rounded-2xl shadow-paper-lg font-body text-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none bg-transparent px-4"
           >
-            {toast}
+            <span className="bg-ink text-white px-4 py-3 rounded-2xl shadow-paper-lg font-body text-sm">
+              {toast}
+            </span>
           </motion.div>
         )}
       </AnimatePresence>

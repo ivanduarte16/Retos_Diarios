@@ -7,7 +7,6 @@ import { getAuth } from 'firebase/auth'
 import {
   getFirestore,
   enableIndexedDbPersistence,
-  connectFirestoreEmulator,
 } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 

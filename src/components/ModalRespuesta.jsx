@@ -12,31 +12,40 @@ export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
   const [previews, setPreviews] = useState([])
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const fileInputRef = useRef()
 
   function handleFiles(e) {
-    const selected = Array.from(e.target.files).slice(0, 4)
+    previews.forEach(url => URL.revokeObjectURL(url))
+    const selected = Array.from(e.target.files || []).slice(0, 4)
     setArchivos(selected)
     setPreviews(selected.map(f => URL.createObjectURL(f)))
   }
 
   function removeFile(idx) {
-    const newFiles = archivos.filter((_, i) => i !== idx)
-    const newPrev = previews.filter((_, i) => i !== idx)
-    setArchivos(newFiles)
-    setPreviews(newPrev)
+    if (previews[idx]) URL.revokeObjectURL(previews[idx])
+    setArchivos(prev => prev.filter((_, i) => i !== idx))
+    setPreviews(prev => prev.filter((_, i) => i !== idx))
   }
+
+  useEffect(() => {
+    return () => previews.forEach(url => URL.revokeObjectURL(url))
+  }, [previews])
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!texto.trim() && archivos.length === 0) return
+
+    setSubmitError('')
     setLoading(true)
     try {
       const usuario = {
         uid: currentUser.uid,
         nombre: userProfile?.nombre || ((currentUser.email || '').split('@')[0] || 'Usuario'),
-        emoji: userProfile?.emoji || '😊',
+        email: currentUser.email || '',
+        emoji: userProfile?.emoji || '🙂',
       }
+
       await subirRespuesta(getFechaHoy(), usuario, texto, archivos)
       setDone(true)
       confetti({
@@ -45,12 +54,14 @@ export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
         origin: { y: 0.6 },
         colors: ['#E8614A', '#F0B429', '#FDF6EC', '#C94832'],
       })
+
       setTimeout(() => {
         onSuccess?.()
         onClose()
       }, 1800)
     } catch (err) {
       console.error(err)
+      setSubmitError('No se pudo subir tu respuesta. Intenta de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -95,6 +106,12 @@ export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {submitError && (
+                  <div className="bg-coral/10 border border-coral/20 rounded-2xl p-3 text-coral text-sm font-body">
+                    {submitError}
+                  </div>
+                )}
+
                 <textarea
                   value={texto}
                   onChange={e => setTexto(e.target.value)}
@@ -104,7 +121,6 @@ export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
                   maxLength={500}
                 />
 
-                {/* Image previews */}
                 {previews.length > 0 && (
                   <div className="grid grid-cols-4 gap-2">
                     {previews.map((src, i) => (
@@ -122,11 +138,10 @@ export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
                   </div>
                 )}
 
-                {/* Upload button */}
                 {archivos.length < 4 && (
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current.click()}
+                    onClick={() => fileInputRef.current?.click()}
                     className="w-full border-2 border-dashed border-cream-dark rounded-2xl py-4 flex items-center justify-center gap-2 text-ink/40 hover:border-coral/40 hover:text-coral transition-all"
                   >
                     <Image size={18} />
@@ -136,7 +151,7 @@ export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*,video/*"
+                  accept="image/*"
                   multiple
                   className="hidden"
                   onChange={handleFiles}

@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Trash2, CheckCircle } from 'lucide-react'
+import { Send, Trash2, Image as ImageIcon } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { addReto, getRetos, deleteReto } from '../services/firebaseService'
 
 const CATEGORIAS = [
-  { id: 'foto',      emoji: '📸', label: 'Foto' },
-  { id: 'texto',     emoji: '💬', label: 'Texto' },
-  { id: 'tonteria',  emoji: '🤪', label: 'Tontería' },
+  { id: 'foto', emoji: '📸', label: 'Foto' },
+  { id: 'texto', emoji: '💬', label: 'Texto' },
+  { id: 'tonteria', emoji: '🤪', label: 'Tontería' },
   { id: 'romantico', emoji: '💌', label: 'Romántico' },
-  { id: 'video',     emoji: '🎥', label: 'Vídeo' },
-  { id: 'juego',     emoji: '🎮', label: 'Juego' },
+  { id: 'video', emoji: '🎥', label: 'Vídeo' },
+  { id: 'juego', emoji: '🎮', label: 'Juego' },
 ]
 
-// Animated bingo ball entry
-function BallaEntry({ onDone }) {
+function BallEntry({ onDone }) {
   useEffect(() => {
     const t = setTimeout(onDone, 1200)
     return () => clearTimeout(t)
@@ -43,18 +42,28 @@ export default function AnadirRetoPage() {
   const [loading, setLoading] = useState(false)
   const [showBall, setShowBall] = useState(false)
   const [toast, setToast] = useState('')
+  const [error, setError] = useState('')
 
-  useEffect(() => { loadRetos() }, [])
+  useEffect(() => {
+    loadRetos()
+  }, [])
 
   async function loadRetos() {
-    const all = await getRetos()
-    const mios = all.filter(r => r.creadoPor === currentUser?.uid)
-    setMisRetos(mios)
+    try {
+      const all = await getRetos()
+      const mios = all.filter(r => r.creadoPor === currentUser?.uid)
+      setMisRetos(mios)
+    } catch (e) {
+      console.error(e)
+      setError('No se pudieron cargar tus retos.')
+    }
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!texto.trim()) return
+
+    setError('')
     setLoading(true)
     try {
       await addReto(texto.trim(), categoria, currentUser.uid)
@@ -63,14 +72,23 @@ export default function AnadirRetoPage() {
       await loadRetos()
       setToast('¡Reto añadido! Saldrá cuando toque 🎯')
       setTimeout(() => setToast(''), 3000)
+    } catch (e2) {
+      console.error(e2)
+      setError('No se pudo guardar el reto. Intenta de nuevo.')
     } finally {
       setLoading(false)
     }
   }
 
   async function handleDelete(id) {
-    await deleteReto(id)
-    setMisRetos(prev => prev.filter(r => r.id !== id))
+    setError('')
+    try {
+      await deleteReto(id)
+      setMisRetos(prev => prev.filter(r => r.id !== id))
+    } catch (e2) {
+      console.error(e2)
+      setError('No se pudo borrar el reto.')
+    }
   }
 
   const catCfg = CATEGORIAS.find(c => c.id === categoria) || CATEGORIAS[0]
@@ -80,7 +98,12 @@ export default function AnadirRetoPage() {
       <h1 className="font-display text-2xl font-bold text-ink mb-1">Meter al bingo 🎰</h1>
       <p className="font-body text-xs text-ink/40 mb-6">Añade un reto para la bola del bingo</p>
 
-      {/* Preview card */}
+      {error && (
+        <div className="card border border-coral/20 text-coral text-sm font-body mb-4">
+          {error}
+        </div>
+      )}
+
       <div className="card mb-4 border-2 border-dashed border-cream-dark min-h-20">
         <p className="font-body text-[10px] text-ink/30 uppercase tracking-wide mb-2">
           {catCfg.emoji} Vista previa
@@ -90,12 +113,10 @@ export default function AnadirRetoPage() {
         </p>
       </div>
 
-      {/* Ball animation */}
       <AnimatePresence>
-        {showBall && <BallaEntry onDone={() => setShowBall(false)} />}
+        {showBall && <BallEntry onDone={() => setShowBall(false)} />}
       </AnimatePresence>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="font-body text-xs font-medium text-ink/50 uppercase tracking-wide mb-1 block">
@@ -112,7 +133,6 @@ export default function AnadirRetoPage() {
           <p className="font-body text-xs text-ink/30 text-right mt-1">{texto.length}/200</p>
         </div>
 
-        {/* Category selector */}
         <div>
           <label className="font-body text-xs font-medium text-ink/50 uppercase tracking-wide mb-2 block">
             Categoría
@@ -123,8 +143,7 @@ export default function AnadirRetoPage() {
                 key={cat.id}
                 type="button"
                 onClick={() => setCategoria(cat.id)}
-                className={`rounded-2xl py-3 flex flex-col items-center gap-1 font-body text-xs font-medium transition-all
-                  ${categoria === cat.id ? 'bg-coral text-white shadow-paper' : 'bg-surface text-ink/50 shadow-paper'}`}
+                className={`rounded-2xl py-3 flex flex-col items-center gap-1 font-body text-xs font-medium transition-all ${categoria === cat.id ? 'bg-coral text-white shadow-paper' : 'bg-surface text-ink/50 shadow-paper'}`}
               >
                 <span className="text-lg">{cat.emoji}</span>
                 {cat.label}
@@ -144,7 +163,6 @@ export default function AnadirRetoPage() {
         </motion.button>
       </form>
 
-      {/* My challenges */}
       {misRetos.length > 0 && (
         <div className="mt-8">
           <h2 className="font-display text-lg font-semibold text-ink mb-3">Mis retos ({misRetos.length})</h2>
@@ -158,7 +176,8 @@ export default function AnadirRetoPage() {
               >
                 <div className="flex-1 min-w-0">
                   <p className="font-body text-xs text-ink/40 mb-0.5">
-                    {CATEGORIAS.find(c => c.id === reto.categoria)?.emoji} {CATEGORIAS.find(c => c.id === reto.categoria)?.label}
+                    {(CATEGORIAS.find(c => c.id === reto.categoria) || { emoji: '🧩', label: reto.categoria }).emoji}{' '}
+                    {(CATEGORIAS.find(c => c.id === reto.categoria) || { label: reto.categoria }).label}
                     {reto.usado && <span className="ml-2 text-emerald-500">✅ Ya salió</span>}
                   </p>
                   <p className="font-body text-sm text-ink leading-snug">{reto.texto}</p>
@@ -167,6 +186,7 @@ export default function AnadirRetoPage() {
                   <button
                     onClick={() => handleDelete(reto.id)}
                     className="p-2 rounded-xl hover:bg-red-50 text-ink/20 hover:text-red-400 transition-colors flex-shrink-0"
+                    title="Borrar reto"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -177,16 +197,24 @@ export default function AnadirRetoPage() {
         </div>
       )}
 
-      {/* Toast */}
+      {!misRetos.length && !loading && (
+        <div className="card mt-8 flex items-center gap-3">
+          <ImageIcon size={16} className="text-ink/30" />
+          <p className="font-body text-xs text-ink/40">Todavía no has añadido retos personalizados.</p>
+        </div>
+      )}
+
       <AnimatePresence>
         {toast && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-ink text-white px-4 py-3 rounded-2xl shadow-paper-lg font-body text-sm whitespace-nowrap"
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none bg-transparent px-4"
           >
-            {toast}
+            <span className="bg-ink text-white px-4 py-3 rounded-2xl shadow-paper-lg font-body text-sm whitespace-nowrap">
+              {toast}
+            </span>
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Filter, X, Trophy, Flame, Star, Heart, Calendar } from 'lucide-react'
+import { X, Trophy, Flame, Star } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 import { getPosts, getStats, getUsuario } from '../services/firebaseService'
 
 const CATEGORIAS = [
@@ -11,6 +12,11 @@ const CATEGORIAS = [
   { id: 'romantico', label: 'Romántico', emoji: '💌' },
   { id: 'completos', label: 'Los dos', emoji: '🎊' },
 ]
+
+function isGenericNombre(nombre) {
+  const n = String(nombre || '').trim().toLowerCase()
+  return !n || n === 'usuario'
+}
 
 function PostCard({ post, onClick }) {
   const resp1 = post.respuestas?.[0]
@@ -27,17 +33,14 @@ function PostCard({ post, onClick }) {
       onClick={onClick}
       className="card cursor-pointer active:shadow-paper-lg transition-shadow"
     >
-      {/* Date */}
       <p className="font-body text-xs text-ink/35 mb-2">
         {fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
       </p>
 
-      {/* Challenge text */}
       <p className="font-display text-sm font-medium text-ink leading-snug mb-3 line-clamp-2">
         {post.retoTexto}
       </p>
 
-      {/* Photo grid (if any photos) */}
       {(resp1?.fotos?.length > 0 || resp2?.fotos?.length > 0) && (
         <div className="grid grid-cols-2 gap-1 mb-3 rounded-xl overflow-hidden">
           {[resp1, resp2].map((r, i) =>
@@ -52,15 +55,13 @@ function PostCard({ post, onClick }) {
         </div>
       )}
 
-      {/* Status row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
           {post.respuestas?.map((r, i) => (
             <span key={i} title={r.usuarioNombre} className="text-base">{r.emoji}</span>
           ))}
         </div>
-        <span className={`font-body text-xs px-2 py-0.5 rounded-full
-          ${post.completadoTotal ? 'bg-emerald-100 text-emerald-600' : 'bg-cream-dark text-ink/40'}`}>
+        <span className={`font-body text-xs px-2 py-0.5 rounded-full ${post.completadoTotal ? 'bg-emerald-100 text-emerald-600' : 'bg-cream-dark text-ink/40'}`}>
           {post.completadoTotal ? '✅ Completo' : '⏳ Parcial'}
         </span>
       </div>
@@ -68,11 +69,12 @@ function PostCard({ post, onClick }) {
   )
 }
 
-function PostDetail({ post, retoDiario, onClose }) {
+function PostDetail({ post, onClose }) {
+  const { currentUser, userProfile } = useAuth()
+  const [nombresPorUid, setNombresPorUid] = useState({})
   const resp1 = post.respuestas?.[0]
   const resp2 = post.respuestas?.[1]
   const fecha = post.fecha instanceof Date ? post.fecha : post.fecha?.toDate?.() || new Date(post.fecha)
-  const [nombresPorUid, setNombresPorUid] = useState({})
 
   useEffect(() => {
     let alive = true
@@ -103,16 +105,24 @@ function PostDetail({ post, retoDiario, onClose }) {
       if (alive) setNombresPorUid({})
     })
 
-    return () => { alive = false }
+    return () => {
+      alive = false
+    }
   }, [post?.id, post?.respuestas])
 
   function resolveNombre(resp) {
     if (!resp) return ''
+
     const byUid = resp.usuarioId ? nombresPorUid[resp.usuarioId] : null
-    if (byUid) return byUid
-    const raw = (resp.usuarioNombre || '').trim()
-    if (raw && raw.toLowerCase() !== 'usuario') return raw
-    return 'Usuario'
+    if (!isGenericNombre(byUid)) return byUid
+
+    const raw = String(resp.usuarioNombre || '').trim()
+    if (!isGenericNombre(raw)) return raw
+
+    if (resp.usuarioId && resp.usuarioId === currentUser?.uid) {
+      return userProfile?.nombre || 'Tú'
+    }
+    return 'Tu pareja'
   }
 
   return (
@@ -139,6 +149,7 @@ function PostDetail({ post, retoDiario, onClose }) {
               <X size={20} className="text-ink/40" />
             </button>
           </div>
+
           <h3 className="font-display text-xl font-medium text-ink mb-5 leading-snug">{post.retoTexto}</h3>
 
           <div className="grid grid-cols-2 gap-4">
@@ -180,13 +191,21 @@ export default function HistorialPage() {
   const [filtro, setFiltro] = useState('all')
   const [selectedPost, setSelectedPost] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function load() {
-      const [p, s] = await Promise.all([getPosts(), getStats()])
-      setPosts(p)
-      setStats(s)
-      setLoading(false)
+      try {
+        const [p, s] = await Promise.all([getPosts(), getStats()])
+        setPosts(p)
+        setStats(s)
+        setError('')
+      } catch (e) {
+        console.error(e)
+        setError('No se pudo cargar el álbum. Intenta recargar.')
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [])
@@ -199,11 +218,15 @@ export default function HistorialPage() {
 
   return (
     <div className="min-h-full bg-cream px-4 pt-6 pb-20 md:pb-2">
-      {/* Header */}
       <h1 className="font-display text-2xl font-bold text-ink mb-1">Nuestro Álbum 📚</h1>
       <p className="font-body text-xs text-ink/40 mb-5">Todos los retos que hemos compartido</p>
 
-      {/* Stats strip */}
+      {error && (
+        <div className="card border border-coral/20 text-coral text-sm font-body mb-4">
+          {error}
+        </div>
+      )}
+
       {stats && (
         <div className="grid grid-cols-3 gap-2 mb-5">
           <StatChip icon={<Trophy size={14} className="text-mustard" />} value={stats.total} label="Completados" />
@@ -212,21 +235,18 @@ export default function HistorialPage() {
         </div>
       )}
 
-      {/* Filter chips */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-hide">
         {CATEGORIAS.map(cat => (
           <button
             key={cat.id}
             onClick={() => setFiltro(cat.id)}
-            className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full font-body text-xs font-medium transition-all
-              ${filtro === cat.id ? 'bg-coral text-white shadow-paper' : 'bg-surface text-ink/50 shadow-paper'}`}
+            className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full font-body text-xs font-medium transition-all ${filtro === cat.id ? 'bg-coral text-white shadow-paper' : 'bg-surface text-ink/50 shadow-paper'}`}
           >
             {cat.emoji} {cat.label}
           </button>
         ))}
       </div>
 
-      {/* Grid */}
       {loading ? (
         <div className="grid grid-cols-2 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -248,9 +268,7 @@ export default function HistorialPage() {
         </motion.div>
       )}
 
-      {selectedPost && (
-        <PostDetail post={selectedPost} onClose={() => setSelectedPost(null)} />
-      )}
+      {selectedPost && <PostDetail post={selectedPost} onClose={() => setSelectedPost(null)} />}
     </div>
   )
 }

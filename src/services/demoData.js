@@ -4,9 +4,21 @@
 import { formatInTimeZone } from 'date-fns-tz'
 
 const TZ = 'Europe/Madrid'
+const FECHA_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/
 
 function getFechaKey(date) {
   return formatInTimeZone(date, TZ, 'yyyy-MM-dd')
+}
+
+function isFechaKey(value) {
+  return FECHA_KEY_REGEX.test(String(value || ''))
+}
+
+function plusDays(fechaKey, days) {
+  const [y, m, d] = fechaKey.split('-').map(Number)
+  const base = new Date(Date.UTC(y, m - 1, d, 12, 0, 0))
+  base.setUTCDate(base.getUTCDate() + days)
+  return formatInTimeZone(base, TZ, 'yyyy-MM-dd')
 }
 
 function getRachaActual(completadoKeys) {
@@ -29,6 +41,24 @@ function getRachaActual(completadoKeys) {
   }
 
   return racha
+}
+
+function getRachaMax(completadoKeys) {
+  const keys = [...completadoKeys].filter(isFechaKey).sort()
+  if (keys.length === 0) return 0
+
+  let max = 1
+  let current = 1
+  for (let i = 1; i < keys.length; i++) {
+    if (keys[i] === plusDays(keys[i - 1], 1)) {
+      current += 1
+    } else {
+      current = 1
+    }
+    if (current > max) max = current
+  }
+
+  return max
 }
 
 const RETOS_INICIALES = [
@@ -251,6 +281,9 @@ class DemoStore {
       this.retos = this.retos.map(r => ({ ...r, usado: false }))
       pool = this.retos
     }
+    if (pool.length === 0) {
+      throw new Error('No hay retos disponibles. Agrega al menos un reto.')
+    }
     const idx = Math.floor(Math.random() * pool.length)
     const reto = pool[idx]
     this.retos = this.retos.map(r => r.id === reto.id ? { ...r, usado: true, fechaUsado: new Date() } : r)
@@ -337,15 +370,19 @@ class DemoStore {
   // Stats
   getStats() {
     const posts = this.posts
-    const completados = posts.filter(p => p.completadoTotal)
-
-    const completadoKeys = new Set(completados.map(p => p.id))
+    const completadoKeys = new Set(
+      posts
+        .filter(p => p.completadoTotal)
+        .map(p => p.retoDiarioId || p.id)
+        .filter(isFechaKey)
+    )
     const racha = getRachaActual(completadoKeys)
+    const rachaMax = getRachaMax(completadoKeys)
 
     return {
-      total: completados.length,
+      total: completadoKeys.size,
       racha,
-      rachaMax: Math.max(racha, completados.length > 0 ? 3 : 0),
+      rachaMax,
       user1Retos: this.usuarios.user1?.retosCreados || 0,
       user2Retos: this.usuarios.user2?.retosCreados || 0,
     }

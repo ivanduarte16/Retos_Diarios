@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Image as ImageIcon } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 import { getUsuario } from '../services/firebaseService'
 
+function isGenericNombre(nombre) {
+  const n = String(nombre || '').trim().toLowerCase()
+  return !n || n === 'usuario'
+}
+
 export default function ModalVerRespuestas({ post, retoDiario, onClose }) {
+  const { currentUser, userProfile } = useAuth()
   const [nombresPorUid, setNombresPorUid] = useState({})
 
   useEffect(() => {
@@ -35,16 +42,24 @@ export default function ModalVerRespuestas({ post, retoDiario, onClose }) {
       if (alive) setNombresPorUid({})
     })
 
-    return () => { alive = false }
+    return () => {
+      alive = false
+    }
   }, [post?.id, post?.respuestas])
 
   function resolveNombre(resp) {
     if (!resp) return ''
+
     const byUid = resp.usuarioId ? nombresPorUid[resp.usuarioId] : null
-    if (byUid) return byUid
-    const raw = (resp.usuarioNombre || '').trim()
-    if (raw && raw.toLowerCase() !== 'usuario') return raw
-    return 'Usuario'
+    if (!isGenericNombre(byUid)) return byUid
+
+    const raw = String(resp.usuarioNombre || '').trim()
+    if (!isGenericNombre(raw)) return raw
+
+    if (resp.usuarioId && resp.usuarioId === currentUser?.uid) {
+      return userProfile?.nombre || 'Tú'
+    }
+    return 'Tu pareja'
   }
 
   if (!post) return null
@@ -75,12 +90,10 @@ export default function ModalVerRespuestas({ post, retoDiario, onClose }) {
             </button>
           </div>
 
-          {/* Reto */}
           <div className="bg-cream rounded-2xl p-3 mb-5">
             <p className="font-body text-sm text-ink/60 leading-relaxed">{retoDiario?.retoTexto}</p>
           </div>
 
-          {/* Two columns */}
           <div className="grid grid-cols-2 gap-3">
             <RespuestaColumn resp={resp1} nombre={resolveNombre(resp1)} />
             <RespuestaColumn resp={resp2} nombre={resolveNombre(resp2)} />
@@ -110,13 +123,11 @@ function RespuestaColumn({ resp, nombre }) {
 
   return (
     <div className="bg-cream rounded-2xl p-3 space-y-2">
-      {/* Avatar */}
       <div className="flex items-center gap-2">
         <span className="text-xl">{resp.emoji}</span>
         <span className="font-body text-xs font-semibold text-ink/70 truncate">{nombre || resp.usuarioNombre}</span>
       </div>
 
-      {/* Photos */}
       {resp.fotos?.length > 0 ? (
         <div className="grid grid-cols-2 gap-1">
           {resp.fotos.map((url, i) => (
@@ -129,7 +140,6 @@ function RespuestaColumn({ resp, nombre }) {
         </div>
       )}
 
-      {/* Text */}
       {resp.texto && (
         <p className="font-body text-xs text-ink/60 leading-relaxed line-clamp-4">{resp.texto}</p>
       )}
