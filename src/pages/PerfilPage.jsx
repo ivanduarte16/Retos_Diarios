@@ -76,12 +76,17 @@ export default function PerfilPage() {
   }
 
   async function handleLogout() {
-    try { await logout(); navigate('/login') }
-    catch (err) { console.error(err); setError('No se pudo cerrar sesion.') }
+    try {
+      await logout()
+      // ProtectedRoute will redirect to /login automatically
+    } catch (err) {
+      console.error(err)
+      setError('No se pudo cerrar sesion.')
+    }
   }
 
   return (
-    <div className="min-h-full bg-cream px-4 pt-6 pb-8">
+    <div className="min-h-full bg-cream px-4 pt-6 pb-24">
       {loading ? (
         <><SkeletonProfile /><SkeletonStats /></>
       ) : (
