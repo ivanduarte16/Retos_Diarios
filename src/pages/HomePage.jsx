@@ -58,11 +58,11 @@ function BingoBall({ onDone }) {
         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-coral via-coral to-coral-dark shadow-paper-lg" />
         <div className="absolute top-3 left-5 w-10 h-6 rounded-full bg-white/30 blur-sm rotate-12" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center shadow-inner">
+          <div className="w-20 h-20 rounded-[20px] bg-white/90 flex items-center justify-center shadow-inner border-4 border-white/50">
             <motion.span
               animate={{ opacity: [1, 0, 1] }}
               transition={{ duration: 0.4, repeat: Infinity }}
-              className="font-display text-3xl font-bold text-coral"
+              className="font-display text-3xl font-bold text-primary"
             >?</motion.span>
           </div>
         </div>
@@ -88,16 +88,16 @@ function RetoCard({ retoDiario }) {
     <div className="perspective-1000 w-full aspect-[3/2]" onClick={() => setFlipped(v => !v)}>
       <motion.div animate={{ rotateY: flipped ? 0 : 180 }}
         transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }} className="relative w-full h-full transform-style-3d">
-        <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-3xl bg-gradient-to-br from-coral to-coral-dark flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-[24px] bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center overflow-hidden border-4 border-white">
           <div className="grid grid-cols-6 gap-3 opacity-20 p-4 rotate-6">
             {Array.from({ length: 30 }).map((_, i) => <div key={i} className="w-6 h-6 rounded-full bg-white" />)}
           </div>
           <span className="absolute font-display text-7xl opacity-30">🎯</span>
         </div>
-        <div className="absolute inset-0 backface-hidden rounded-3xl bg-surface shadow-paper-lg p-6 flex flex-col justify-between overflow-hidden">
+        <div className="absolute inset-0 backface-hidden rounded-[24px] bg-surface shadow-paper-lg p-6 flex flex-col justify-between overflow-hidden border-4 border-primary/20">
           <div className="flex items-center justify-between">
-            <span className={`font-body text-xs font-medium px-3 py-1 rounded-full ${cfg.color}`}>{cfg.emoji} {cfg.label}</span>
-            <Star size={16} className="text-mustard" fill="currentColor" />
+            <span className={`font-body text-xs font-medium px-3 py-1 rounded-[12px] ${cfg.color}`}>{cfg.emoji} {cfg.label}</span>
+            <Star size={16} className="text-secondary" fill="currentColor" />
           </div>
           <div className="flex-1 flex items-center my-4">
             <motion.p
@@ -111,11 +111,11 @@ function RetoCard({ retoDiario }) {
             {Array.from({ length: 5 }).map((_, i) => (
               <motion.div key={i} initial={{ scaleX: 0 }} animate={{ scaleX: 1 }}
                 transition={{ delay: 1.2 + i * 0.1, duration: 0.3 }}
-                className="flex-1 h-1 rounded-full bg-cream-dark origin-left" />
+                className="flex-1 h-2 rounded-full bg-background origin-left border border-primary/10" />
             ))}
           </div>
-          <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-coral/5" />
-          <div className="absolute -top-6 -left-6 w-20 h-20 rounded-full bg-mustard/8" />
+          <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-primary/5" />
+          <div className="absolute -top-6 -left-6 w-20 h-20 rounded-full bg-secondary/8" />
         </div>
       </motion.div>
     </div>
@@ -124,11 +124,11 @@ function RetoCard({ retoDiario }) {
 
 function StatusBadge({ label, emoji, done }) {
   return (
-    <div className={`flex-1 flex items-center gap-2 rounded-2xl p-3 transition-all ${done ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-surface shadow-paper'}`}>
+    <div className={`flex-1 flex items-center gap-2 rounded-[20px] p-3 transition-all border-2 ${done ? 'bg-cta/10 border-cta/20' : 'bg-surface shadow-sm border-primary/10'}`}>
       <span className="text-lg">{emoji}</span>
       <div className="flex-1 min-w-0">
-        <p className="font-body text-xs font-medium truncate text-ink/60">{label}</p>
-        <p className={`font-body text-xs font-semibold ${done ? 'text-emerald-600 dark:text-emerald-400' : 'text-ink/30'}`}>
+        <p className="font-body text-xs font-medium truncate text-ink/80">{label}</p>
+        <p className={`font-body text-xs font-semibold ${done ? 'text-cta' : 'text-ink/40'}`}>
           {done ? 'Completado ✓' : 'Pendiente'}
         </p>
       </div>
@@ -197,7 +197,7 @@ export default function HomePage() {
   const emojiPareja = respuestaPareja?.emoji || '💛'
 
   return (
-    <div className="min-h-full bg-cream px-4 pt-6 pb-20 md:pb-2 relative flex flex-col" {...handlers}>
+    <div className="min-h-full bg-background px-4 pt-6 pb-20 md:pb-2 relative flex flex-col" {...handlers}>
       {/* Pull to refresh indicator */}
       <AnimatePresence>
         {(pulling || refreshing) && (
@@ -225,8 +225,8 @@ export default function HomePage() {
         {stats && (
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20, delay: 0.3 }}
-            className="flex items-center gap-1.5 glass rounded-2xl px-3 py-2 shadow-paper">
-            <Flame size={16} className="text-coral" />
+            className="flex items-center gap-1.5 glass rounded-[16px] px-3 py-2 shadow-sm border-2 border-primary/10">
+            <Flame size={16} className="text-secondary" />
             <AnimatedCounter value={stats.racha} className="font-body text-sm font-semibold text-ink" />
           </motion.div>
         )}

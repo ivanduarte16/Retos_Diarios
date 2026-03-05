@@ -39,7 +39,7 @@ function AnimatedOutlet() {
 
 function AppLayout() {
   return (
-    <div className="flex h-screen w-full bg-cream md:bg-cream-dark">
+    <div className="flex h-screen w-full bg-background md:bg-background">
       <FloatingParticles />
       <div className="hidden md:block w-72 h-full flex-shrink-0 bg-surface shadow-paper-lg z-10">
         <div className="p-8 pb-4">
@@ -53,7 +53,7 @@ function AppLayout() {
       </div>
 
       <div className="flex-1 h-full relative flex justify-center overflow-hidden">
-        <div className="w-full max-w-lg h-full bg-cream relative flex flex-col shadow-2xl md:rounded-3xl md:my-10 md:h-[calc(100%-5rem)] md:border border-cream-dark overflow-hidden transition-all">
+        <div className="w-full max-w-lg h-full bg-background relative flex flex-col shadow-2xl md:rounded-[24px] md:my-10 md:h-[calc(100%-5rem)] md:border-4 md:border-primary/20 overflow-hidden transition-all">
           <main className="flex-1 overflow-y-auto pb-20 md:pb-6 md:px-6">
             <div className="max-w-md mx-auto h-full"><AnimatedOutlet /></div>
           </main>

@@ -8,18 +8,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        cream: 'var(--color-cream)',
-        'cream-dark': 'var(--color-cream-dark)',
-        coral: 'var(--color-accent)',
-        'coral-dark': 'var(--color-accent-dark)',
-        mustard: 'var(--color-secondary)',
-        'mustard-dark': '#D49A1A',
-        ink: 'var(--color-ink)',
+        background: 'var(--color-background)',
+        primary: 'var(--color-primary)',
+        secondary: 'var(--color-secondary)',
+        cta: 'var(--color-cta)',
+        ink: 'var(--color-text)',
         surface: 'var(--color-surface)',
       },
       fontFamily: {
-        display: ['"Playfair Display"', 'Georgia', 'serif'],
-        body: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        display: ['"Inter"', 'sans-serif'],
+        body: ['"Inter"', 'sans-serif'],
       },
       borderRadius: {
         '2xl': '1rem',

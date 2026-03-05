@@ -1185,3 +1185,28 @@ Solo aparece si hubo actividad la semana pasada.
 | MODIFICADO | `src/pages/LoginPage.jsx`         | Rediseño completo                      |
 | MODIFICADO | `src/App.jsx`                     | SplashScreen condicional               |
 | MODIFICADO | `src/pages/HomePage.jsx`          | Pull-to-refresh, recap, haptics, share |
+
+---
+
+## 28. Cambios v6 — Rediseño con UI/UX Pro Max (2026-03-05)
+
+Esta sección detalla los cambios de interfaz implementados utilizando el sistema de diseño derivado de la _skill_ **UI/UX Pro Max**.
+
+### 28.1 Integración de UI/UX Pro Max Skill
+
+**Cambio:** Se ha integrado la herramienta `ui-ux-pro-max-skill` en el proyecto para proveer lineamientos de diseño dirigidos por IA a través de generación de sistemas de diseño estructurados (como `MASTER.md`).
+
+### 28.2 Sistema de Diseño: Claymorphism
+
+**Cambio:** Se migró el diseño visual base del proyecto al estilo **Claymorphism**. Esto se logró siguiendo el nuevo documento semántico generado en `design-system/retos-diarios/MASTER.md`. Los cambios clave son:
+
+- **Efectos y Sombras:** Uso de bordes suaves pero gruesos (2-4px), y sombras profundas pero sutiles en los botones y tarjetas para simular objetos 3D y componentes suaves y "burbujeantes".
+- **Colores (Paleta base fría/fresca):** Sustitución de los tonos crema y corales originales por una progresión que va de **Cyan** (`#0891B2` como primary) a un fondo sumamente claro (`#ECFEFF`), y usando **Verde Esmeralda** (`#059669`) para elementos interactivos como botones con acciones afirmativas (Primary CTA).
+- **Tipografía:** Transición general del stack tipográfico desde `Playfair Display/DM Sans` a la recomendada universal: **Inter**. Incrementando su legibilidad conservando una apariencia juguetona y precisa para aplicaciones móviles.
+
+**Archivos afectados:**
+
+- `tailwind.config.js` (Modificados tokens de temas)
+- `index.html` (Nuevas fuentes)
+- `src/index.css` (Variables CSS base reestructuradas bajo la guía Claymorphism)
+- `src/App.jsx` y `src/pages/HomePage.jsx` (Redirección a las nuevas variables de color y esquemas de layout/border).
