@@ -20,17 +20,21 @@ export default function BottomNav({ isSidebar = false }) {
             to={to}
             end={to === '/'}
             className={({ isActive }) =>
-              `flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-200 font-body font-medium ${isActive ? 'bg-coral/10 text-coral' : 'text-ink/50 hover:bg-cream-dark hover:text-ink/80'}`
+              `flex items-center gap-4 rounded-2xl px-4 py-3 font-body font-semibold transition-all duration-200 ${
+                isActive
+                  ? 'bg-primary/12 text-primary shadow-paper'
+                  : 'text-ink/55 hover:bg-cream-dark hover:text-ink'
+              }`
             }
           >
             {({ isActive }) => (
               <>
                 {to === '/anadir' ? (
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? 'bg-coral text-white' : 'bg-cream-dark text-ink/40'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? 'bg-primary text-white' : 'bg-cream-dark text-ink/40'}`}>
                     <Icon size={16} />
                   </div>
                 ) : (
-                  <Icon size={20} className={isActive ? 'text-coral' : ''} />
+                  <Icon size={20} className={isActive ? 'text-primary' : ''} />
                 )}
                 <span>{label}</span>
               </>
@@ -42,15 +46,17 @@ export default function BottomNav({ isSidebar = false }) {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 w-full glass shadow-paper-lg z-50 safe-bottom">
-      <div className="flex items-stretch h-16">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 w-full border-t border-primary/12 bg-surface/92 backdrop-blur-xl safe-bottom">
+      <div className="mx-auto flex h-16 max-w-2xl items-stretch px-1">
         {tabs.map(({ to, label, Icon }) => (
           <NavLink
             key={to}
             to={to}
             end={to === '/'}
             className={({ isActive }) =>
-              `flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-200 relative ${isActive ? 'text-coral' : 'text-ink/30 hover:text-ink/60'}`
+              `relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-200 ${
+                isActive ? 'text-primary' : 'text-ink/35 hover:text-ink/70'
+              }`
             }
           >
             {({ isActive }) => (
@@ -58,7 +64,7 @@ export default function BottomNav({ isSidebar = false }) {
                 {isActive && (
                   <motion.div
                     layoutId="nav-indicator"
-                    className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-coral rounded-full"
+                    className="absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full bg-primary"
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   />
                 )}
@@ -67,7 +73,7 @@ export default function BottomNav({ isSidebar = false }) {
                   transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                 >
                   {to === '/anadir' ? (
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-paper transition-all ${isActive ? 'bg-coral' : 'bg-cream-dark'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-paper transition-all ${isActive ? 'bg-primary' : 'bg-cream-dark'}`}>
                       <Icon size={20} className={isActive ? 'text-white' : 'text-ink/40'} />
                     </div>
                   ) : (

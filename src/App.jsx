@@ -39,26 +39,30 @@ function AnimatedOutlet() {
 
 function AppLayout() {
   return (
-    <div className="flex h-screen w-full bg-background md:bg-background">
+    <div className="relative min-h-screen w-full bg-background">
       <FloatingParticles />
-      <div className="hidden md:block w-72 h-full flex-shrink-0 bg-surface shadow-paper-lg z-10">
-        <div className="p-8 pb-4">
-          <div className="text-3xl mb-2 font-display">RD</div>
-          <h1 className="font-display text-2xl font-bold text-ink mb-1">Retos Diarios</h1>
-          <p className="font-body text-ink/40 text-xs">Para ti y para mi</p>
-        </div>
-        <div className="mt-8 px-4">
-          <BottomNav isSidebar />
-        </div>
-      </div>
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1440px]">
+        <aside className="hidden md:flex w-72 shrink-0 flex-col border-r border-primary/10 bg-surface/80 backdrop-blur-xl">
+          <div className="px-8 pb-4 pt-10">
+            <p className="font-display text-3xl text-primary mb-1">RD</p>
+            <h1 className="font-display text-2xl font-bold text-ink mb-1">Retos Diarios</h1>
+            <p className="font-body text-ink/50 text-xs">Para ti y para mi</p>
+          </div>
+          <div className="mt-8 px-4">
+            <BottomNav isSidebar />
+          </div>
+        </aside>
 
-      <div className="flex-1 h-full relative flex justify-center overflow-hidden">
-        <div className="w-full max-w-lg h-full bg-background relative flex flex-col shadow-2xl md:rounded-[24px] md:my-10 md:h-[calc(100%-5rem)] md:border-4 md:border-primary/20 overflow-hidden transition-all">
-          <main className="flex-1 overflow-y-auto pb-20 md:pb-6 md:px-6">
-            <div className="max-w-md mx-auto h-full"><AnimatedOutlet /></div>
-          </main>
-          <div className="md:hidden">
-            <BottomNav />
+        <div className="flex min-w-0 flex-1 justify-center px-0 md:px-8 md:py-8">
+          <div className="relative flex w-full flex-col md:max-w-2xl md:rounded-[28px] md:border md:border-primary/15 md:bg-surface/75 md:shadow-paper-lg md:backdrop-blur-sm">
+            <main className="relative flex-1 overflow-y-auto px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pb-8 md:pt-8">
+              <div className="mx-auto w-full max-w-2xl">
+                <AnimatedOutlet />
+              </div>
+            </main>
+            <div className="md:hidden">
+              <BottomNav />
+            </div>
           </div>
         </div>
       </div>

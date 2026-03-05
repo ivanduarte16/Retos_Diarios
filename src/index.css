@@ -4,37 +4,48 @@
 
 @layer base {
   :root {
-    /* Claymorphism Theme Colors */
-    --color-primary: #0891b2;
-    --color-secondary: #22d3ee;
-    --color-cta: #059669;
-    --color-background: #ecfeff;
-    --color-text: #164e63;
+    --color-primary: #4f46e5;
+    --color-secondary: #818cf8;
+    --color-cta: #f97316;
+    --color-background: #eef2ff;
     --color-surface: #ffffff;
+    --color-text: #1e1b4b;
 
-    /* Spacing Variables */
-    --space-xs: 4px;
-    --space-sm: 8px;
-    --space-md: 16px;
-    --space-lg: 24px;
-    --space-xl: 32px;
-    --space-2xl: 48px;
-    --space-3xl: 64px;
+    --color-accent: var(--color-primary);
+    --color-accent-dark: #4338ca;
+    --color-coral: var(--color-primary);
+    --color-coral-dark: var(--color-accent-dark);
+    --color-cream: #f8faff;
+    --color-cream-dark: #e4e9ff;
+    --color-mustard: #f59e0b;
+    --color-ink: var(--color-text);
 
-    /* Shadow Depths */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+    --shadow-sm: 0 3px 8px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 10px 24px rgba(31, 38, 135, 0.1);
+    --shadow-lg: 0 18px 38px rgba(31, 38, 135, 0.14);
+    --shadow-xl: 0 28px 50px rgba(15, 23, 42, 0.2);
   }
 
   .dark {
-    --color-background: #0f172a;
-    --color-primary: #06b6d4;
-    --color-secondary: #0891b2;
-    --color-cta: #10b981;
-    --color-text: #f8fafc;
-    --color-surface: #1e293b;
+    --color-background: #090b1a;
+    --color-surface: #171a2d;
+    --color-text: #eef2ff;
+    --color-primary: #818cf8;
+    --color-secondary: #a5b4fc;
+    --color-cta: #fb923c;
+    --color-accent: var(--color-primary);
+    --color-accent-dark: #6366f1;
+    --color-coral: var(--color-primary);
+    --color-coral-dark: var(--color-accent-dark);
+    --color-cream: #1f2340;
+    --color-cream-dark: #2b3154;
+    --color-mustard: #fcd34d;
+    --color-ink: var(--color-text);
+
+    --shadow-sm: 0 3px 8px rgba(2, 6, 23, 0.35);
+    --shadow-md: 0 10px 26px rgba(2, 6, 23, 0.45);
+    --shadow-lg: 0 18px 40px rgba(2, 6, 23, 0.55);
+    --shadow-xl: 0 30px 55px rgba(2, 6, 23, 0.65);
   }
 
   * {
@@ -43,87 +54,122 @@
 
   html,
   body {
-    height: 100%;
-    background-color: var(--color-background);
+    min-height: 100%;
+    margin: 0;
+    background:
+      radial-gradient(
+        circle at 8% -10%,
+        color-mix(in srgb, var(--color-primary) 20%, transparent),
+        transparent 32%
+      ),
+      radial-gradient(
+        circle at 100% 110%,
+        color-mix(in srgb, var(--color-secondary) 18%, transparent),
+        transparent 36%
+      ),
+      var(--color-background);
     color: var(--color-text);
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: "Nunito", system-ui, sans-serif;
     transition:
-      background-color 0.3s,
-      color 0.3s;
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: "Fredoka", "Nunito", sans-serif;
+    letter-spacing: 0.01em;
+  }
+
+  button,
+  [role='button'] {
+    cursor: pointer;
   }
 
   #root {
-    height: 100%;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
+    isolation: isolate;
   }
 }
 
 @layer components {
-  /* Primary Button */
   .btn-primary {
-    @apply font-body font-medium rounded-2xl px-6 py-3 cursor-pointer;
-    background: var(--color-cta);
-    color: white;
+    @apply font-body font-semibold rounded-2xl px-6 py-3 text-white;
+    background: linear-gradient(
+      135deg,
+      var(--color-cta) 0%,
+      color-mix(in srgb, var(--color-cta) 82%, var(--color-accent)) 100%
+    );
+    border: 1px solid color-mix(in srgb, var(--color-cta) 60%, transparent);
     box-shadow: var(--shadow-md);
-    transition: all 200ms ease-out;
+    transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
   }
+
   .btn-primary:hover {
-    opacity: 0.9;
-    transform: translateY(-2px);
+    transform: translateY(-1px);
+    filter: saturate(1.04);
     box-shadow: var(--shadow-lg);
   }
 
-  /* Secondary Button */
-  .btn-secondary {
-    @apply font-body font-medium rounded-2xl px-6 py-3 cursor-pointer;
-    background: transparent;
-    color: var(--color-primary);
-    border: 3px solid var(--color-primary);
-    transition: all 200ms ease-out;
+  .btn-primary:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+    outline-offset: 2px;
   }
+
+  .btn-secondary {
+    @apply font-body font-semibold rounded-2xl px-6 py-3;
+    background: color-mix(in srgb, var(--color-surface) 86%, var(--color-primary) 14%);
+    color: var(--color-primary);
+    border: 2px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+    transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  }
+
   .btn-secondary:hover {
-    background: var(--color-background);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+    background: color-mix(in srgb, var(--color-surface) 78%, var(--color-primary) 22%);
+  }
+
+  .btn-secondary:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
+    outline-offset: 2px;
   }
 
   .card {
-    @apply rounded-3xl shadow-paper p-5;
+    @apply rounded-3xl p-5;
     background-color: var(--color-surface);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
+    box-shadow: var(--shadow-sm);
   }
 
   .input-field {
-    @apply border-2 border-transparent outline-none rounded-2xl px-4 py-3 font-body
-           w-full transition-all duration-200;
-    background-color: var(--color-cream-dark);
+    @apply w-full rounded-2xl px-4 py-3 font-body outline-none transition-all duration-200;
+    border: 2px solid transparent;
+    background-color: var(--color-cream);
     color: var(--color-ink);
   }
+
   .input-field::placeholder {
-    color: rgba(26, 26, 26, 0.4);
+    color: color-mix(in srgb, var(--color-ink) 48%, transparent);
   }
-  .dark .input-field::placeholder {
-    color: rgba(240, 240, 240, 0.4);
-  }
+
   .input-field:focus {
-    border-color: var(--color-accent);
-    background-color: var(--color-cream);
-    box-shadow: 0 0 0 3px
-      color-mix(in srgb, var(--color-accent) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 68%, transparent);
+    background-color: color-mix(in srgb, var(--color-cream) 86%, white);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 14%, transparent);
   }
 
   .glass {
-    @apply backdrop-blur-xl border;
-    background: rgba(255, 255, 255, 0.7);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-  .dark .glass {
-    background: rgba(30, 30, 42, 0.7);
-    border-color: rgba(255, 255, 255, 0.08);
+    @apply border backdrop-blur-xl;
+    background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
   }
 }
 
-/* 3D card flip */
 .perspective-1000 {
   perspective: 1000px;
 }
@@ -140,28 +186,28 @@
   transform: rotateY(180deg);
 }
 
-/* Smooth scrollbar */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--color-accent) 25%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 28%, transparent);
   border-radius: 99px;
 }
 
-/* Hide scrollbar for filter rows */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
 
-/* Toast */
 .toast-enter {
   animation: slideUp 0.3s ease-out;
 }
@@ -171,17 +217,18 @@
     opacity: 0;
     transform: translateY(16px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* Shimmer for skeleton loaders */
 @keyframes shimmer {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -191,9 +238,15 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .motion-reduce\:hidden {
     display: none !important;
+  }
+
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
