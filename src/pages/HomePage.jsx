@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, Upload, Flame, Star } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import { getRetoDiario, getPost, getFechaHoy, getStats } from '../services/firebaseService'
+import { getRetoDiario, getPost, getFechaHoy, getPosts, calcStats } from '../services/firebaseService'
 import { formatFechaCabecera } from '../utils/date'
+import { CATEGORIA_CONFIG } from '../utils/categorias'
 import { isGenericNombre, resolveNombreUsuario } from '../utils/user'
 import ModalRespuesta from '../components/ModalRespuesta'
 import ModalVerRespuestas from '../components/ModalVerRespuestas'
@@ -11,14 +12,7 @@ import InlineError from '../components/ui/InlineError'
 
 const BINGO_SEEN_KEY = 'retos_diarios_bingo_seen_date'
 
-const CATEGORIA_CONFIG = {
-  foto: { emoji: '📸', label: 'Foto', color: 'bg-blue-50 text-blue-500' },
-  texto: { emoji: '💬', label: 'Texto', color: 'bg-emerald-50 text-emerald-500' },
-  tonteria: { emoji: '🤪', label: 'Tonteria', color: 'bg-purple-50 text-purple-500' },
-  romantico: { emoji: '💌', label: 'Romantico', color: 'bg-pink-50 text-pink-500' },
-  video: { emoji: '🎥', label: 'Video', color: 'bg-orange-50 text-orange-500' },
-  juego: { emoji: '🎮', label: 'Juego', color: 'bg-indigo-50 text-indigo-500' },
-}
+
 
 function hasSeenBingoToday(fecha) {
   try {
@@ -146,35 +140,37 @@ export default function HomePage() {
 
   const fecha = getFechaHoy()
 
-  async function loadData() {
+  const loadData = useCallback(async (alive = { current: true }) => {
     try {
-      const [reto, postData, statsData] = await Promise.all([
+      const [reto, postData, postsAll] = await Promise.all([
         getRetoDiario(),
         getPost(fecha),
-        getStats(),
+        getPosts(),
       ])
+      if (!alive.current) return
       setRetoDiario(reto)
       setPost(postData)
-      setStats(statsData)
+      setStats(calcStats(postsAll))
       setError('')
     } catch (err) {
+      if (!alive.current) return
       console.error(err)
       setError('No se pudo cargar el reto. Comprueba tu conexion.')
     }
-  }
+  }, [fecha])
 
   useEffect(() => {
-    let alive = true
+    const alive = { current: true }
     async function init() {
-      await loadData()
-      if (!alive) return
+      await loadData(alive)
+      if (!alive.current) return
       setStage(hasSeenBingoToday(fecha) ? 'card' : 'bingo')
     }
     init()
     return () => {
-      alive = false
+      alive.current = false
     }
-  }, [fecha])
+  }, [fecha, loadData])
 
   const respuestaMia = useMemo(
     () => (post?.respuestas || []).find(r => r?.usuarioId === currentUser?.uid),
@@ -297,7 +293,7 @@ export default function HomePage() {
           retoDiario={retoDiario}
           onClose={() => setShowModal(false)}
           onSuccess={() => {
-            loadData()
+            loadData({ current: true })
           }}
         />
       )}

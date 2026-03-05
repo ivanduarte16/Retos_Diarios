@@ -69,8 +69,13 @@ export default function PerfilPage() {
   }
 
   async function handleLogout() {
-    await logout()
-    navigate('/login')
+    try {
+      await logout()
+      navigate('/login')
+    } catch (err) {
+      console.error(err)
+      setError('No se pudo cerrar sesion. Intenta de nuevo.')
+    }
   }
 
   return (

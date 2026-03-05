@@ -1,62 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { X, Image as ImageIcon } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
-import { getUsuario } from '../services/firebaseService'
+import useNombresPorUid from '../hooks/useNombresPorUid'
 import ModalShell from './ui/ModalShell'
-import { isGenericNombre } from '../utils/user'
 
 export default function ModalVerRespuestas({ post, retoDiario, onClose }) {
-  const { currentUser, userProfile } = useAuth()
-  const [nombresPorUid, setNombresPorUid] = useState({})
-
-  useEffect(() => {
-    let alive = true
-
-    async function loadNombres() {
-      const uids = [...new Set((post?.respuestas || []).map(r => r?.usuarioId).filter(Boolean))]
-      if (uids.length === 0) {
-        if (alive) setNombresPorUid({})
-        return
-      }
-
-      const pairs = await Promise.all(
-        uids.map(async (uid) => {
-          const perfil = await getUsuario(uid)
-          return [uid, perfil?.nombre || null]
-        })
-      )
-
-      if (!alive) return
-      const map = {}
-      for (const [uid, nombre] of pairs) {
-        if (nombre) map[uid] = nombre
-      }
-      setNombresPorUid(map)
-    }
-
-    loadNombres().catch(() => {
-      if (alive) setNombresPorUid({})
-    })
-
-    return () => {
-      alive = false
-    }
-  }, [post?.id, post?.respuestas])
-
-  function resolveNombre(resp) {
-    if (!resp) return ''
-
-    const byUid = resp.usuarioId ? nombresPorUid[resp.usuarioId] : null
-    if (!isGenericNombre(byUid)) return byUid
-
-    const raw = String(resp.usuarioNombre || '').trim()
-    if (!isGenericNombre(raw)) return raw
-
-    if (resp.usuarioId && resp.usuarioId === currentUser?.uid) {
-      return userProfile?.nombre || 'Tu'
-    }
-    return 'Tu pareja'
-  }
+  const { resolveNombre } = useNombresPorUid(post)
 
   if (!post) return null
 

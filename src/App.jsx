@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import BottomNav from './components/BottomNav'
 import LoginPage from './pages/LoginPage'
@@ -8,12 +8,12 @@ import HistorialPage from './pages/HistorialPage'
 import AnadirRetoPage from './pages/AnadirRetoPage'
 import PerfilPage from './pages/PerfilPage'
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute() {
   const { currentUser } = useAuth()
-  return currentUser ? children : <Navigate to="/login" replace />
+  return currentUser ? <Outlet /> : <Navigate to="/login" replace />
 }
 
-function AppLayout({ children }) {
+function AppLayout() {
   return (
     <div className="flex h-screen w-full bg-cream md:bg-cream-dark">
       <div className="hidden md:block w-72 h-full flex-shrink-0 bg-surface shadow-paper-lg z-10">
@@ -30,7 +30,7 @@ function AppLayout({ children }) {
       <div className="flex-1 h-full relative flex justify-center overflow-hidden">
         <div className="w-full max-w-lg h-full bg-cream relative flex flex-col shadow-2xl md:rounded-3xl md:my-10 md:h-[calc(100%-5rem)] md:border border-cream-dark overflow-hidden transition-all">
           <main className="flex-1 overflow-y-auto pb-20 md:pb-6 md:px-6">
-            <div className="max-w-md mx-auto h-full">{children}</div>
+            <div className="max-w-md mx-auto h-full"><Outlet /></div>
           </main>
           <div className="md:hidden">
             <BottomNav />
@@ -47,38 +47,14 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/"
-            element={(
-              <ProtectedRoute>
-                <AppLayout><HomePage /></AppLayout>
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/historial"
-            element={(
-              <ProtectedRoute>
-                <AppLayout><HistorialPage /></AppLayout>
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/anadir"
-            element={(
-              <ProtectedRoute>
-                <AppLayout><AnadirRetoPage /></AppLayout>
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/perfil"
-            element={(
-              <ProtectedRoute>
-                <AppLayout><PerfilPage /></AppLayout>
-              </ProtectedRoute>
-            )}
-          />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route index element={<HomePage />} />
+              <Route path="historial" element={<HistorialPage />} />
+              <Route path="anadir" element={<AnadirRetoPage />} />
+              <Route path="perfil" element={<PerfilPage />} />
+            </Route>
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

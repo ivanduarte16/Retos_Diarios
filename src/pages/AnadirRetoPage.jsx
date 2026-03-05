@@ -3,17 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Trash2, Image as ImageIcon } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { addReto, getRetos, deleteReto } from '../services/firebaseService'
+import { CATEGORIAS } from '../utils/categorias'
 import InlineError from '../components/ui/InlineError'
 import ToastCenter from '../components/ui/ToastCenter'
-
-const CATEGORIAS = [
-  { id: 'foto', emoji: '📸', label: 'Foto' },
-  { id: 'texto', emoji: '💬', label: 'Texto' },
-  { id: 'tonteria', emoji: '🤪', label: 'Tonteria' },
-  { id: 'romantico', emoji: '💌', label: 'Romantico' },
-  { id: 'video', emoji: '🎥', label: 'Video' },
-  { id: 'juego', emoji: '🎮', label: 'Juego' },
-]
 
 function BallEntry({ onDone }) {
   useEffect(() => {

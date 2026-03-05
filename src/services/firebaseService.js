@@ -16,76 +16,16 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage, isDemoMode } from '../firebase'
 import { demoStore } from './demoData'
 import { formatInTimeZone } from 'date-fns-tz'
+import {
+  getRachaActual,
+  getRachaMax,
+  getCompletadoKeySet,
+} from '../utils/streak'
 
 const TZ = 'Europe/Madrid'
-const FECHA_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/
 
 export function getFechaHoy() {
   return formatInTimeZone(new Date(), TZ, 'yyyy-MM-dd')
-}
-
-function getFechaKey(date) {
-  return formatInTimeZone(date, TZ, 'yyyy-MM-dd')
-}
-
-function isFechaKey(value) {
-  return FECHA_KEY_REGEX.test(String(value || ''))
-}
-
-function plusDays(fechaKey, days) {
-  const [y, m, d] = fechaKey.split('-').map(Number)
-  const base = new Date(Date.UTC(y, m - 1, d, 12, 0, 0))
-  base.setUTCDate(base.getUTCDate() + days)
-  return formatInTimeZone(base, TZ, 'yyyy-MM-dd')
-}
-
-function getRachaActual(completadoKeys) {
-  const today = new Date()
-  const todayKey = getFechaKey(today)
-
-  // If today is not completed yet, keep the streak alive from yesterday.
-  const startOffset = completadoKeys.has(todayKey) ? 0 : 1
-
-  let racha = 0
-  for (let i = startOffset; i < 366; i++) {
-    const d = new Date(today)
-    d.setDate(d.getDate() - i)
-    const key = getFechaKey(d)
-    if (completadoKeys.has(key)) {
-      racha += 1
-    } else {
-      break
-    }
-  }
-
-  return racha
-}
-
-function getRachaMax(completadoKeys) {
-  const keys = [...completadoKeys].filter(isFechaKey).sort()
-  if (keys.length === 0) return 0
-
-  let max = 1
-  let current = 1
-
-  for (let i = 1; i < keys.length; i++) {
-    if (keys[i] === plusDays(keys[i - 1], 1)) {
-      current += 1
-    } else {
-      current = 1
-    }
-    if (current > max) max = current
-  }
-
-  return max
-}
-
-function getCompletadoKeySet(posts) {
-  const keys = posts
-    .filter(p => p?.completadoTotal)
-    .map(p => p?.retoDiarioId || p?.id)
-    .filter(isFechaKey)
-  return new Set(keys)
 }
 
 function getNombreUsuarioSeguro(usuario) {
@@ -312,12 +252,23 @@ export async function updateUsuario(uid, data) {
   return data
 }
 
-export async function getStats() {
-  if (isDemoMode) return demoStore.getStats()
-  const posts = await getPosts()
+/**
+ * Calcula estadisticas a partir de un array de posts ya cargado.
+ * Evita lecturas duplicadas a Firestore cuando el caller ya tiene los posts.
+ */
+export function calcStats(posts) {
   const completadoKeys = getCompletadoKeySet(posts)
   const racha = getRachaActual(completadoKeys)
   const rachaMax = getRachaMax(completadoKeys)
-
   return { total: completadoKeys.size, racha, rachaMax }
+}
+
+/**
+ * Carga posts y calcula stats. Usa calcStats internamente.
+ * Mantiene retrocompatibilidad con callers existentes.
+ */
+export async function getStats() {
+  if (isDemoMode) return demoStore.getStats()
+  const posts = await getPosts()
+  return calcStats(posts)
 }

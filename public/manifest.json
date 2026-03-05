@@ -1,0 +1,17 @@
+{
+  "name": "Retos Diarios",
+  "short_name": "Retos",
+  "description": "App de retos diarios para parejas — un reto diferente cada dia",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDF6EC",
+  "theme_color": "#E8614A",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
