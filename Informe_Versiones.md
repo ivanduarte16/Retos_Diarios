@@ -600,6 +600,7 @@ Para pasar de "funciona bien" a "operacion robusta a largo plazo", lo prioritari
 - `v2` (2026-03-05): refactorizacion completa — eliminacion de codigo duplicado, optimizacion de rendimiento, soporte PWA. Detalle en seccion 24.
 - `v3` (2026-03-05): mejoras visuales y de UX — glassmorphism, transiciones, skeletons, heatmap, confeti, onboarding, micro-animaciones. Detalle en seccion 25.
 - `v4` (2026-03-05): features premium — dark mode, temas de color, logros, notas de amor, countdown, lightbox, timeline, code splitting, compresion imagenes, error boundary. Detalle en seccion 26.
+- `v5` (2026-03-05): toques finales — splash screen, login rediseñado, haptic feedback, compartir reto, weekly recap, pull-to-refresh. Detalle en seccion 27.
 
 ---
 
@@ -1086,3 +1087,101 @@ Desbloqueados aparecen con animacion `scale`, bloqueados en gris con 🔒.
 | MODIFICADO | `src/pages/HistorialPage.jsx`             | Lightbox, timeline view, staggered lists                        |
 | MODIFICADO | `src/pages/PerfilPage.jsx`                | Dark toggle, temas, logros, countdown                           |
 | MODIFICADO | `src/components/ModalRespuesta.jsx`       | Compresion de imagenes                                          |
+
+---
+
+## 27. Cambios v5 — Toques finales (2026-03-05)
+
+Dernier polish: 6 features enfocadas en la primera impresion, la sensacion tactil, y funcionalidades sociales.
+
+### 27.1 Login page rediseñado
+
+**Cambio:** Rediseño completo de la pagina de login:
+
+- Emojis flotantes animados en el fondo (🎲📸💛🔥✨🎯)
+- Circulos de gradiente decorativos con color del tema
+- Logo RD con animacion spring (escala 0 + rotacion)
+- Entradas escalonadas (logo → titulo → card → footer)
+- Haptic feedback en login exitoso/fallido
+- Icono `LogIn` de Lucide en boton, `Loader` animado al cargar
+- Footer "Hecho con 💛 para nosotros"
+
+**Archivo:** `src/pages/LoginPage.jsx` (reescrito)
+
+---
+
+### 27.2 Splash screen animado
+
+**Cambio:** Al abrir la app por primera vez en la sesion, se muestra una pantalla con:
+
+- Fondo gradiente en color del tema
+- Logo RD con animacion spring (escala 0, rotacion -180°)
+- Texto "Retos Diarios" + "Para ti y para mi" con fade escalonado
+- Puntos de carga pulsantes
+- Auto-cierre tras 2.5s
+
+Se muestra una vez por sesion (controlado por `sessionStorage`).
+
+**Archivos:** `src/components/SplashScreen.jsx` (NUEVO), `src/App.jsx`
+
+---
+
+### 27.3 Haptic feedback
+
+**Cambio:** Vibraciones del dispositivo movil en interacciones clave:
+
+- `hapticLight` (10ms): pulsar botones
+- `hapticMedium` (25ms): login exitoso
+- `hapticSuccess` (doble pulso): completar reto
+- `hapticError` (triple pulso): error de login
+
+No hace nada en navegadores sin soporte.
+
+**Archivos:** `src/utils/haptics.js` (NUEVO), `HomePage.jsx`, `LoginPage.jsx`
+
+---
+
+### 27.4 Boton compartir reto
+
+**Cambio:** Nuevo boton "Compartir reto" en la home page. Usa Web Share API nativa (WhatsApp, Telegram, etc.) o copia al portapapeles como fallback.
+
+Texto compartido: "🎯 Reto del dia: [texto del reto] — Retos Diarios"
+
+**Archivo:** `src/pages/HomePage.jsx`
+
+---
+
+### 27.5 Weekly recap (resumen semanal)
+
+**Cambio:** Tarjeta en la home que muestra el resumen de la semana anterior:
+
+- Retos completados juntos
+- Fotos subidas
+- Racha actual
+- Mensaje motivacional segun tasa de completado (👑☝️💪🌱)
+
+Solo aparece si hubo actividad la semana pasada.
+
+**Archivo:** `src/components/WeeklyRecap.jsx` (NUEVO)
+
+---
+
+### 27.6 Pull-to-refresh
+
+**Cambio:** Gesto de arrastrar hacia abajo en la home para recargar datos. Indicador visual con emoji rotante (↓ → 🎯 → 🔄). Usa un custom hook reutilizable.
+
+**Archivos:** `src/hooks/usePullToRefresh.js` (NUEVO), `src/pages/HomePage.jsx`
+
+---
+
+### 27.7 Resumen de archivos v5
+
+| Tipo       | Archivo                           | Cambio                                 |
+| ---------- | --------------------------------- | -------------------------------------- |
+| NUEVO      | `src/components/SplashScreen.jsx` | Splash animado con logo                |
+| NUEVO      | `src/components/WeeklyRecap.jsx`  | Tarjeta recap semanal                  |
+| NUEVO      | `src/utils/haptics.js`            | Vibraciones tactiles (5 patrones)      |
+| NUEVO      | `src/hooks/usePullToRefresh.js`   | Hook pull-to-refresh                   |
+| MODIFICADO | `src/pages/LoginPage.jsx`         | Rediseño completo                      |
+| MODIFICADO | `src/App.jsx`                     | SplashScreen condicional               |
+| MODIFICADO | `src/pages/HomePage.jsx`          | Pull-to-refresh, recap, haptics, share |

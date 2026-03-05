@@ -1,14 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import confetti from 'canvas-confetti'
-import { Eye, Upload, Flame, Star } from 'lucide-react'
+import { Eye, Upload, Flame, Star, Share2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { getRetoDiario, getPost, getFechaHoy, getPosts, calcStats } from '../services/firebaseService'
 import { formatFechaCabecera } from '../utils/date'
 import { CATEGORIA_CONFIG } from '../utils/categorias'
 import { isGenericNombre, resolveNombreUsuario } from '../utils/user'
+import { hapticLight, hapticMedium, hapticSuccess } from '../utils/haptics'
+import usePullToRefresh from '../hooks/usePullToRefresh'
 import ModalRespuesta from '../components/ModalRespuesta'
 import ModalVerRespuestas from '../components/ModalVerRespuestas'
+import WeeklyRecap from '../components/WeeklyRecap'
 import InlineError from '../components/ui/InlineError'
 import AnimatedCounter from '../components/ui/AnimatedCounter'
 import { SkeletonRetoCard } from '../components/ui/Skeleton'
@@ -138,6 +141,7 @@ export default function HomePage() {
   const [retoDiario, setRetoDiario] = useState(null)
   const [post, setPost] = useState(null)
   const [stats, setStats] = useState(null)
+  const [allPosts, setAllPosts] = useState([])
   const [stage, setStage] = useState('loading')
   const [showModal, setShowModal] = useState(false)
   const [showVerModal, setShowVerModal] = useState(false)
@@ -152,14 +156,29 @@ export default function HomePage() {
       const [reto, postData, postsAll] = await Promise.all([getRetoDiario(), getPost(fecha), getPosts()])
       if (!alive.current) return
       const isCompleto = postData?.completadoTotal
-      if (isCompleto && !prevCompleto) fireConfetti()
+      if (isCompleto && !prevCompleto) { fireConfetti(); hapticSuccess() }
       setPrevCompleto(isCompleto)
-      setRetoDiario(reto); setPost(postData); setStats(calcStats(postsAll)); setError('')
+      setRetoDiario(reto); setPost(postData); setAllPosts(postsAll); setStats(calcStats(postsAll)); setError('')
     } catch (err) {
       if (!alive.current) return
       console.error(err); setError('No se pudo cargar el reto. Comprueba tu conexion.')
     }
   }, [fecha, prevCompleto])
+
+  const { pulling, refreshing, pullDistance, handlers } = usePullToRefresh(
+    () => loadData({ current: true })
+  )
+
+  function handleShare() {
+    if (!retoDiario) return
+    hapticLight()
+    const text = `🎯 Reto del dia: ${retoDiario.retoTexto}\n\nRetos Diarios — nuestra app de retos`
+    if (navigator.share) {
+      navigator.share({ title: 'Reto del dia', text }).catch(() => {})
+    } else {
+      navigator.clipboard?.writeText(text).catch(() => {})
+    }
+  }
 
   useEffect(() => {
     const alive = { current: true }
@@ -178,7 +197,25 @@ export default function HomePage() {
   const emojiPareja = respuestaPareja?.emoji || '💛'
 
   return (
-    <div className="min-h-full bg-cream px-4 pt-6 pb-20 md:pb-2 relative flex flex-col">
+    <div className="min-h-full bg-cream px-4 pt-6 pb-20 md:pb-2 relative flex flex-col" {...handlers}>
+      {/* Pull to refresh indicator */}
+      <AnimatePresence>
+        {(pulling || refreshing) && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: pullDistance > 0 ? pullDistance : 40, opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="flex items-center justify-center overflow-hidden -mt-6 mb-2"
+          >
+            <motion.div
+              animate={{ rotate: refreshing ? 360 : pullDistance * 3 }}
+              transition={refreshing ? { duration: 0.8, repeat: Infinity, ease: 'linear' } : { duration: 0 }}
+              className="text-2xl"
+            >{refreshing ? '🔄' : pullDistance > 60 ? '🎯' : '↓'}</motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className={`absolute inset-x-0 top-0 h-40 bg-gradient-to-b ${greeting.gradient} to-transparent pointer-events-none`} />
       <div className="flex items-center justify-between mb-6 relative z-10">
         <div>
@@ -221,16 +258,20 @@ export default function HomePage() {
               <StatusBadge label={nombrePareja} emoji={emojiPareja} done={parejaRespondio} />
             </div>
             <div className="mt-5 space-y-3">
-              <motion.button whileTap={{ scale: 0.93 }} onClick={() => setShowModal(true)}
+              <motion.button whileTap={{ scale: 0.93 }} onClick={() => { hapticLight(); setShowModal(true) }}
                 className={`btn-primary w-full flex items-center justify-center gap-2 ${yaRespondi ? 'opacity-70' : ''}`}>
                 <Upload size={18} />{yaRespondi ? 'Actualizar mi respuesta' : 'Subir mi respuesta'}
               </motion.button>
               {(yaRespondi || parejaRespondio) && (
-                <motion.button whileTap={{ scale: 0.93 }} onClick={() => setShowVerModal(true)}
+                <motion.button whileTap={{ scale: 0.93 }} onClick={() => { hapticLight(); setShowVerModal(true) }}
                   className="btn-secondary w-full flex items-center justify-center gap-2">
                   <Eye size={18} />Ver respuestas
                 </motion.button>
               )}
+              <motion.button whileTap={{ scale: 0.93 }} onClick={handleShare}
+                className="btn-secondary w-full flex items-center justify-center gap-2">
+                <Share2 size={18} />Compartir reto
+              </motion.button>
             </div>
             {stats && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5 card text-center">
@@ -239,6 +280,7 @@ export default function HomePage() {
               </motion.div>
             )}
             <LoveNoteComposer className="mt-4" />
+            <WeeklyRecap posts={allPosts} stats={stats} />
           </motion.div>
         )}
       </AnimatePresence>

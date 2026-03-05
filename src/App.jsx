@@ -6,6 +6,7 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import BottomNav from './components/BottomNav'
 import Onboarding, { hasSeenOnboarding } from './components/Onboarding'
+import SplashScreen from './components/SplashScreen'
 import PageTransition from './components/ui/PageTransition'
 import FloatingParticles from './components/ui/FloatingParticles'
 import PageLoader from './components/ui/PageLoader'
@@ -67,10 +68,21 @@ function AppLayout() {
 
 function AppContent() {
   const [showOnboarding, setShowOnboarding] = useState(!hasSeenOnboarding())
+  const [showSplash, setShowSplash] = useState(() => {
+    try { return !sessionStorage.getItem('retos_splash_seen') } catch { return false }
+  })
+
+  function handleSplashDone() {
+    setShowSplash(false)
+    try { sessionStorage.setItem('retos_splash_seen', '1') } catch {}
+  }
 
   return (
     <>
-      {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
+      <AnimatePresence>
+        {showSplash && <SplashScreen onDone={handleSplashDone} />}
+      </AnimatePresence>
+      {!showSplash && showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
