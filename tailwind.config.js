@@ -4,17 +4,18 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        cream: '#FDF6EC',
-        'cream-dark': '#F5ECD8',
-        coral: '#E8614A',
-        'coral-dark': '#C94832',
-        mustard: '#F0B429',
+        cream: 'var(--color-cream)',
+        'cream-dark': 'var(--color-cream-dark)',
+        coral: 'var(--color-accent)',
+        'coral-dark': 'var(--color-accent-dark)',
+        mustard: 'var(--color-secondary)',
         'mustard-dark': '#D49A1A',
-        ink: '#1A1A1A',
-        surface: '#FFFFFF',
+        ink: 'var(--color-ink)',
+        surface: 'var(--color-surface)',
       },
       fontFamily: {
         display: ['"Playfair Display"', 'Georgia', 'serif'],

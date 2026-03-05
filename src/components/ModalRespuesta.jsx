@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti'
 import { X, Image, Send, Loader } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { getFechaHoy, subirRespuesta } from '../services/firebaseService'
+import compressImage from '../utils/compressImage'
 import ModalShell from './ui/ModalShell'
 import InlineError from './ui/InlineError'
 
@@ -17,11 +18,12 @@ export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
   const [submitError, setSubmitError] = useState('')
   const fileInputRef = useRef()
 
-  function handleFiles(e) {
+  async function handleFiles(e) {
     previews.forEach(url => URL.revokeObjectURL(url))
     const selected = Array.from(e.target.files || []).slice(0, 4)
-    setArchivos(selected)
-    setPreviews(selected.map(f => URL.createObjectURL(f)))
+    const compressed = await Promise.all(selected.map(f => compressImage(f)))
+    setArchivos(compressed)
+    setPreviews(compressed.map(f => URL.createObjectURL(f)))
   }
 
   function removeFile(idx) {

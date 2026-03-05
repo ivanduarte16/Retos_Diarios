@@ -11,49 +11,31 @@ import ModalRespuesta from '../components/ModalRespuesta'
 import ModalVerRespuestas from '../components/ModalVerRespuestas'
 import InlineError from '../components/ui/InlineError'
 import AnimatedCounter from '../components/ui/AnimatedCounter'
-import { SkeletonRetoCard, SkeletonStats } from '../components/ui/Skeleton'
+import { SkeletonRetoCard } from '../components/ui/Skeleton'
+import { LoveNoteBanner, LoveNoteComposer } from '../components/LoveNotes'
 
 const BINGO_SEEN_KEY = 'retos_diarios_bingo_seen_date'
 
 function hasSeenBingoToday(fecha) {
-  try {
-    return localStorage.getItem(BINGO_SEEN_KEY) === fecha
-  } catch {
-    return false
-  }
+  try { return localStorage.getItem(BINGO_SEEN_KEY) === fecha } catch { return false }
 }
-
 function markBingoSeen(fecha) {
-  try {
-    localStorage.setItem(BINGO_SEEN_KEY, fecha)
-  } catch {}
+  try { localStorage.setItem(BINGO_SEEN_KEY, fecha) } catch {}
 }
 
 function getTimeGreeting() {
   const h = new Date().getHours()
   if (h < 7) return { text: 'Buenas noches', gradient: 'from-indigo-500/15 to-purple-500/10' }
-  if (h < 13) return { text: 'Buenos dias', gradient: 'from-mustard/20 to-coral/10' }
-  if (h < 20) return { text: 'Buenas tardes', gradient: 'from-coral/15 to-pink-400/10' }
+  if (h < 13) return { text: 'Buenos dias', gradient: 'from-[var(--color-secondary)]/20 to-[var(--color-accent)]/10' }
+  if (h < 20) return { text: 'Buenas tardes', gradient: 'from-[var(--color-accent)]/15 to-pink-400/10' }
   return { text: 'Buenas noches', gradient: 'from-indigo-500/15 to-purple-500/10' }
 }
 
 function fireConfetti() {
   const colors = ['#E8614A', '#F0B429', '#EC4899', '#7C3AED']
-  confetti({
-    particleCount: 80,
-    spread: 70,
-    origin: { y: 0.6 },
-    colors,
-    disableForReducedMotion: true,
-  })
+  confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 }, colors, disableForReducedMotion: true })
   setTimeout(() => {
-    confetti({
-      particleCount: 40,
-      spread: 100,
-      origin: { y: 0.5, x: 0.3 },
-      colors,
-      disableForReducedMotion: true,
-    })
+    confetti({ particleCount: 40, spread: 100, origin: { y: 0.5, x: 0.3 }, colors, disableForReducedMotion: true })
   }, 300)
 }
 
@@ -78,19 +60,12 @@ function BingoBall({ onDone }) {
               animate={{ opacity: [1, 0, 1] }}
               transition={{ duration: 0.4, repeat: Infinity }}
               className="font-display text-3xl font-bold text-coral"
-            >
-              ?
-            </motion.span>
+            >?</motion.span>
           </div>
         </div>
       </motion.div>
-      <motion.p
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
-        className="font-body text-ink/50 mt-6 text-sm"
-      >
-        Eligiendo tu reto de hoy...
-      </motion.p>
+      <motion.p animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.5, repeat: Infinity }}
+        className="font-body text-ink/50 mt-6 text-sm">Eligiendo tu reto de hoy...</motion.p>
     </div>
   )
 }
@@ -101,32 +76,24 @@ function RetoCard({ retoDiario }) {
   const cfg = CATEGORIA_CONFIG[retoDiario.categoria] || CATEGORIA_CONFIG.foto
 
   useEffect(() => {
-    const flipTimer = setTimeout(() => setFlipped(true), 300)
-    const revealTimer = setTimeout(() => setRevealed(true), 1200)
-    return () => { clearTimeout(flipTimer); clearTimeout(revealTimer) }
+    const f = setTimeout(() => setFlipped(true), 300)
+    const r = setTimeout(() => setRevealed(true), 1200)
+    return () => { clearTimeout(f); clearTimeout(r) }
   }, [])
 
   return (
     <div className="perspective-1000 w-full aspect-[3/2]" onClick={() => setFlipped(v => !v)}>
-      <motion.div
-        animate={{ rotateY: flipped ? 0 : 180 }}
-        transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
-        className="relative w-full h-full transform-style-3d"
-      >
+      <motion.div animate={{ rotateY: flipped ? 0 : 180 }}
+        transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }} className="relative w-full h-full transform-style-3d">
         <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-3xl bg-gradient-to-br from-coral to-coral-dark flex items-center justify-center overflow-hidden">
           <div className="grid grid-cols-6 gap-3 opacity-20 p-4 rotate-6">
-            {Array.from({ length: 30 }).map((_, i) => (
-              <div key={i} className="w-6 h-6 rounded-full bg-white" />
-            ))}
+            {Array.from({ length: 30 }).map((_, i) => <div key={i} className="w-6 h-6 rounded-full bg-white" />)}
           </div>
           <span className="absolute font-display text-7xl opacity-30">🎯</span>
         </div>
-
         <div className="absolute inset-0 backface-hidden rounded-3xl bg-surface shadow-paper-lg p-6 flex flex-col justify-between overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className={`font-body text-xs font-medium px-3 py-1 rounded-full ${cfg.color}`}>
-              {cfg.emoji} {cfg.label}
-            </span>
+            <span className={`font-body text-xs font-medium px-3 py-1 rounded-full ${cfg.color}`}>{cfg.emoji} {cfg.label}</span>
             <Star size={16} className="text-mustard" fill="currentColor" />
           </div>
           <div className="flex-1 flex items-center my-4">
@@ -135,19 +102,13 @@ function RetoCard({ retoDiario }) {
               animate={{ filter: revealed ? 'blur(0px)' : 'blur(12px)', opacity: revealed ? 1 : 0.3 }}
               transition={{ duration: 0.8, ease: 'easeOut' }}
               className="font-display text-xl font-medium text-ink leading-snug"
-            >
-              {retoDiario.retoTexto}
-            </motion.p>
+            >{retoDiario.retoTexto}</motion.p>
           </div>
           <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
+              <motion.div key={i} initial={{ scaleX: 0 }} animate={{ scaleX: 1 }}
                 transition={{ delay: 1.2 + i * 0.1, duration: 0.3 }}
-                className="flex-1 h-1 rounded-full bg-cream-dark origin-left"
-              />
+                className="flex-1 h-1 rounded-full bg-cream-dark origin-left" />
             ))}
           </div>
           <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-coral/5" />
@@ -160,11 +121,11 @@ function RetoCard({ retoDiario }) {
 
 function StatusBadge({ label, emoji, done }) {
   return (
-    <div className={`flex-1 flex items-center gap-2 rounded-2xl p-3 transition-all ${done ? 'bg-emerald-50' : 'bg-surface shadow-paper'}`}>
+    <div className={`flex-1 flex items-center gap-2 rounded-2xl p-3 transition-all ${done ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-surface shadow-paper'}`}>
       <span className="text-lg">{emoji}</span>
       <div className="flex-1 min-w-0">
         <p className="font-body text-xs font-medium truncate text-ink/60">{label}</p>
-        <p className={`font-body text-xs font-semibold ${done ? 'text-emerald-600' : 'text-ink/30'}`}>
+        <p className={`font-body text-xs font-semibold ${done ? 'text-emerald-600 dark:text-emerald-400' : 'text-ink/30'}`}>
           {done ? 'Completado ✓' : 'Pendiente'}
         </p>
       </div>
@@ -188,86 +149,46 @@ export default function HomePage() {
 
   const loadData = useCallback(async (alive = { current: true }) => {
     try {
-      const [reto, postData, postsAll] = await Promise.all([
-        getRetoDiario(),
-        getPost(fecha),
-        getPosts(),
-      ])
+      const [reto, postData, postsAll] = await Promise.all([getRetoDiario(), getPost(fecha), getPosts()])
       if (!alive.current) return
-
-      // Fire confetti when both complete
       const isCompleto = postData?.completadoTotal
-      if (isCompleto && !prevCompleto) {
-        fireConfetti()
-      }
+      if (isCompleto && !prevCompleto) fireConfetti()
       setPrevCompleto(isCompleto)
-
-      setRetoDiario(reto)
-      setPost(postData)
-      setStats(calcStats(postsAll))
-      setError('')
+      setRetoDiario(reto); setPost(postData); setStats(calcStats(postsAll)); setError('')
     } catch (err) {
       if (!alive.current) return
-      console.error(err)
-      setError('No se pudo cargar el reto. Comprueba tu conexion.')
+      console.error(err); setError('No se pudo cargar el reto. Comprueba tu conexion.')
     }
   }, [fecha, prevCompleto])
 
   useEffect(() => {
     const alive = { current: true }
-    async function init() {
-      await loadData(alive)
-      if (!alive.current) return
-      setStage(hasSeenBingoToday(fecha) ? 'card' : 'bingo')
-    }
+    async function init() { await loadData(alive); if (alive.current) setStage(hasSeenBingoToday(fecha) ? 'card' : 'bingo') }
     init()
-    return () => {
-      alive.current = false
-    }
+    return () => { alive.current = false }
   }, [fecha, loadData])
 
-  const respuestaMia = useMemo(
-    () => (post?.respuestas || []).find(r => r?.usuarioId === currentUser?.uid),
-    [post?.respuestas, currentUser?.uid]
-  )
-  const respuestaPareja = useMemo(
-    () => (post?.respuestas || []).find(r => r?.usuarioId && r.usuarioId !== currentUser?.uid),
-    [post?.respuestas, currentUser?.uid]
-  )
-
+  const respuestaMia = useMemo(() => (post?.respuestas || []).find(r => r?.usuarioId === currentUser?.uid), [post?.respuestas, currentUser?.uid])
+  const respuestaPareja = useMemo(() => (post?.respuestas || []).find(r => r?.usuarioId && r.usuarioId !== currentUser?.uid), [post?.respuestas, currentUser?.uid])
   const yaRespondi = post?.completadoPor?.includes(currentUser?.uid)
   const parejaRespondio = Boolean(respuestaPareja)
-
-  const nombreMio = resolveNombreUsuario({
-    nombrePerfil: userProfile?.nombre,
-    nombreRespuesta: respuestaMia?.usuarioNombre,
-    nombreFallback: 'Tu',
-  })
+  const nombreMio = resolveNombreUsuario({ nombrePerfil: userProfile?.nombre, nombreRespuesta: respuestaMia?.usuarioNombre, nombreFallback: 'Tu' })
   const emojiMio = userProfile?.emoji || respuestaMia?.emoji || '🙂'
-  const nombrePareja = !isGenericNombre(respuestaPareja?.usuarioNombre)
-    ? respuestaPareja?.usuarioNombre
-    : 'Tu pareja'
+  const nombrePareja = !isGenericNombre(respuestaPareja?.usuarioNombre) ? respuestaPareja?.usuarioNombre : 'Tu pareja'
   const emojiPareja = respuestaPareja?.emoji || '💛'
 
   return (
     <div className="min-h-full bg-cream px-4 pt-6 pb-20 md:pb-2 relative flex flex-col">
-      {/* Gradient header */}
       <div className={`absolute inset-x-0 top-0 h-40 bg-gradient-to-b ${greeting.gradient} to-transparent pointer-events-none`} />
-
       <div className="flex items-center justify-between mb-6 relative z-10">
         <div>
           <p className="font-body text-xs text-ink/40 uppercase tracking-wide">{formatFechaCabecera(new Date())}</p>
-          <h1 className="font-display text-2xl font-bold text-ink">
-            {greeting.text}, {userProfile?.nombre || 'amor'} {userProfile?.emoji || '💛'}
-          </h1>
+          <h1 className="font-display text-2xl font-bold text-ink">{greeting.text}, {userProfile?.nombre || 'amor'} {userProfile?.emoji || '💛'}</h1>
         </div>
         {stats && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20, delay: 0.3 }}
-            className="flex items-center gap-1.5 glass rounded-2xl px-3 py-2 shadow-paper"
-          >
+            className="flex items-center gap-1.5 glass rounded-2xl px-3 py-2 shadow-paper">
             <Flame size={16} className="text-coral" />
             <AnimatedCounter value={stats.racha} className="font-body text-sm font-semibold text-ink" />
           </motion.div>
@@ -275,6 +196,7 @@ export default function HomePage() {
       </div>
 
       <InlineError message={error} className="mb-4" />
+      <LoveNoteBanner />
 
       <AnimatePresence mode="wait">
         {stage === 'loading' && (
@@ -286,85 +208,43 @@ export default function HomePage() {
             </div>
           </motion.div>
         )}
-
         {stage === 'bingo' && retoDiario && (
           <motion.div key="bingo" exit={{ opacity: 0, scale: 0.95 }}>
-            <BingoBall
-              onDone={() => {
-                markBingoSeen(fecha)
-                setStage('card')
-              }}
-            />
+            <BingoBall onDone={() => { markBingoSeen(fecha); setStage('card') }} />
           </motion.div>
         )}
-
         {stage === 'card' && retoDiario && (
           <motion.div key="card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <RetoCard retoDiario={retoDiario} />
-
             <div className="flex gap-3 mt-4">
               <StatusBadge label={nombreMio} emoji={emojiMio} done={yaRespondi} />
               <StatusBadge label={nombrePareja} emoji={emojiPareja} done={parejaRespondio} />
             </div>
-
             <div className="mt-5 space-y-3">
-              <motion.button
-                whileTap={{ scale: 0.93 }}
-                onClick={() => setShowModal(true)}
-                className={`btn-primary w-full flex items-center justify-center gap-2 ${yaRespondi ? 'opacity-70' : ''}`}
-              >
-                <Upload size={18} />
-                {yaRespondi ? 'Actualizar mi respuesta' : 'Subir mi respuesta'}
+              <motion.button whileTap={{ scale: 0.93 }} onClick={() => setShowModal(true)}
+                className={`btn-primary w-full flex items-center justify-center gap-2 ${yaRespondi ? 'opacity-70' : ''}`}>
+                <Upload size={18} />{yaRespondi ? 'Actualizar mi respuesta' : 'Subir mi respuesta'}
               </motion.button>
-
               {(yaRespondi || parejaRespondio) && (
-                <motion.button
-                  whileTap={{ scale: 0.93 }}
-                  onClick={() => setShowVerModal(true)}
-                  className="btn-secondary w-full flex items-center justify-center gap-2"
-                >
-                  <Eye size={18} />
-                  Ver respuestas
+                <motion.button whileTap={{ scale: 0.93 }} onClick={() => setShowVerModal(true)}
+                  className="btn-secondary w-full flex items-center justify-center gap-2">
+                  <Eye size={18} />Ver respuestas
                 </motion.button>
               )}
             </div>
-
             {stats && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="mt-5 card text-center"
-              >
-                <p className="font-body text-2xl">
-                  🔥 <AnimatedCounter value={stats.racha} className="font-body text-2xl" /> {stats.racha === 1 ? 'dia' : 'dias'} seguidos
-                </p>
-                <p className="font-body text-xs text-ink/40 mt-1">
-                  <AnimatedCounter value={stats.total} /> retos completados juntos · Max: <AnimatedCounter value={stats.rachaMax} /> dias
-                </p>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5 card text-center">
+                <p className="font-body text-2xl">🔥 <AnimatedCounter value={stats.racha} className="font-body text-2xl" /> {stats.racha === 1 ? 'dia' : 'dias'} seguidos</p>
+                <p className="font-body text-xs text-ink/40 mt-1"><AnimatedCounter value={stats.total} /> retos completados juntos · Max: <AnimatedCounter value={stats.rachaMax} /> dias</p>
               </motion.div>
             )}
+            <LoveNoteComposer className="mt-4" />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {showModal && (
-        <ModalRespuesta
-          retoDiario={retoDiario}
-          onClose={() => setShowModal(false)}
-          onSuccess={() => {
-            loadData({ current: true })
-          }}
-        />
-      )}
-
-      {showVerModal && (
-        <ModalVerRespuestas
-          post={post}
-          retoDiario={retoDiario}
-          onClose={() => setShowVerModal(false)}
-        />
-      )}
+      {showModal && <ModalRespuesta retoDiario={retoDiario} onClose={() => setShowModal(false)} onSuccess={() => loadData({ current: true })} />}
+      {showVerModal && <ModalVerRespuestas post={post} retoDiario={retoDiario} onClose={() => setShowVerModal(false)} />}
     </div>
   )
 }

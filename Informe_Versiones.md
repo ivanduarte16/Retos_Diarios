@@ -599,6 +599,7 @@ Para pasar de "funciona bien" a "operacion robusta a largo plazo", lo prioritari
 - `v1` (2026-03-05): primera version integral del estado actual del proyecto.
 - `v2` (2026-03-05): refactorizacion completa — eliminacion de codigo duplicado, optimizacion de rendimiento, soporte PWA. Detalle en seccion 24.
 - `v3` (2026-03-05): mejoras visuales y de UX — glassmorphism, transiciones, skeletons, heatmap, confeti, onboarding, micro-animaciones. Detalle en seccion 25.
+- `v4` (2026-03-05): features premium — dark mode, temas de color, logros, notas de amor, countdown, lightbox, timeline, code splitting, compresion imagenes, error boundary. Detalle en seccion 26.
 
 ---
 
@@ -922,3 +923,166 @@ Esta seccion detalla las 12 mejoras visuales, de experiencia de usuario y de wow
 | MODIFICADO | `src/pages/HistorialPage.jsx`           | Heatmap, skeletons, counters, empty states           |
 | MODIFICADO | `src/pages/AnadirRetoPage.jsx`          | Empty state animado, micro-animaciones               |
 | MODIFICADO | `src/pages/PerfilPage.jsx`              | Heatmap, skeletons, counters, micro-animaciones      |
+
+---
+
+## 26. Cambios v4 — Features premium, dark mode y robustez (2026-03-05)
+
+Esta seccion detalla las 20 mejoras de la v4: dark mode, temas, nuevos features, animaciones avanzadas, y robustez tecnica.
+
+### 26.1 Modo oscuro con toggle
+
+**Cambio:** Switch animado en la pagina de Perfil que alterna entre tema claro y oscuro. Fondo `#0F0F14`, cards `#1E1E2A`, texto `#F0F0F0`.
+
+**Implementacion:**
+
+- `ThemeContext.jsx` (NUEVO): contexto React que gestiona dark/light state
+- `index.css`: todas las clases migradas a CSS custom properties que responden a `.dark`
+- `tailwind.config.js`: `darkMode: 'class'`
+- `PerfilPage.jsx`: toggle animado con spring physics
+
+---
+
+### 26.2 Temas de color de pareja
+
+**Cambio:** 5 temas seleccionables: Coral 🌺, Ocean 🌊, Forest 🌿, Sunset 🌅, Sakura 🌸. Cada uno cambia los colores de acento a traves de CSS custom properties.
+
+**Implementacion:** `ThemeContext.jsx` almacena el tema en `localStorage` y aplica `--color-accent`, `--color-accent-dark`, `--color-secondary` al root.
+
+---
+
+### 26.3 Galeria lightbox a pantalla completa
+
+**Cambio:** Al pulsar una foto en el historial, se abre un visor fullscreen con fondo blur, navegacion con flechas (+ teclado), y contador de fotos.
+
+**Archivo:** `src/components/ui/Lightbox.jsx` (NUEVO). Integrado en `HistorialPage > PostDetail`.
+
+---
+
+### 26.4 Particulas flotantes decorativas
+
+**Cambio:** Circulos sutiles (opacity 4%) en color del tema que flotan lentamente por el fondo. Respetan `prefers-reduced-motion`.
+
+**Archivo:** `src/components/ui/FloatingParticles.jsx` (NUEVO). Integrado en `App.jsx > AppLayout`.
+
+---
+
+### 26.5 Listas escalonadas (staggered animations)
+
+**Cambio:** Los posts del historial, las stats, y los logros aparecen en cascada (uno tras otro, 60ms de delay) en vez de todos a la vez.
+
+**Implementacion:** `stagger` + `fadeUp` variants de Framer Motion en `HistorialPage`, `PerfilPage`.
+
+---
+
+### 26.6 Vista timeline en historial
+
+**Cambio:** Boton toggle en historial para cambiar entre vista grid (actual) y vista timeline vertical: una linea continua con puntos (verde = completo, gris = parcial) y texto resumido.
+
+**Archivo:** `HistorialPage.jsx` — nuevo componente `TimelineItem` + toggle `Grid3X3`/`List`.
+
+---
+
+### 26.7 Sistema de logros / badges
+
+**Cambio:** 9 logros desbloqueables que aparecen en Perfil:
+
+- 🎯 Primeros pasos (1 reto)
+- 🔥 Semana de fuego (racha 7)
+- 💪 Imparables (racha 14)
+- 👑 Mes perfecto (racha 30)
+- ⭐ Diez de diez (10 retos)
+- 🏆 Medio centenar (50 retos)
+- 💎 Centenario (100 retos)
+- 📸 Fotografos (10 fotos)
+- 🖼️ Galeria (50 fotos)
+
+Desbloqueados aparecen con animacion `scale`, bloqueados en gris con 🔒.
+
+**Archivos:** `src/utils/achievements.js` (NUEVO), `PerfilPage.jsx`.
+
+---
+
+### 26.8 Notas de amor / mensajes rapidos
+
+**Cambio:** Sistema de mensajes cortos entre la pareja:
+
+- `LoveNoteComposer`: campo de texto en la home para enviar una nota (max 200 chars)
+- `LoveNoteBanner`: banner destacado en la home cuando hay una nota sin leer del otro
+
+**Archivo:** `src/components/LoveNotes.jsx` (NUEVO). Almacenamiento en `localStorage`.
+
+---
+
+### 26.9 Cuenta atras para fechas especiales
+
+**Cambio:** Widget en Perfil donde puedes agregar fechas (aniversario, cumpleanos, vacaciones) y ver los dias que faltan. Ordenado por mas cercano. Las pasadas se muestran como completadas.
+
+**Archivo:** `src/components/CountdownWidget.jsx` (NUEVO). Datos en `localStorage`.
+
+---
+
+### 26.10 Error Boundary global
+
+**Cambio:** Si algo falla en React (error no capturado), en vez de pantalla blanca se muestra emoji 😵‍💫, mensaje amigable, y boton "Recargar".
+
+**Archivo:** `src/components/ErrorBoundary.jsx` (NUEVO). Envuelve toda la app en `App.jsx`.
+
+---
+
+### 26.11 Compresion de imagenes antes de subir
+
+**Cambio:** Las fotos se comprimen client-side antes de subir a Firebase Storage:
+
+- Max 1200px de ancho/alto
+- 80% calidad JPEG
+- Fotos de 3-5MB → ~200KB sin perdida visible
+
+**Archivo:** `src/utils/compressImage.js` (NUEVO). Integrado en `ModalRespuesta.jsx`.
+
+---
+
+### 26.12 Code splitting con lazy imports
+
+**Cambio:** Las 5 paginas se cargan bajo demanda con `React.lazy()`. Bundle principal reducido de 977KB → 872KB. Cada pagina se descarga solo cuando el usuario navega a ella.
+
+**Chunks generados:**
+
+- `LoginPage` → 2.78 KB
+- `HomePage` → 30.39 KB
+- `HistorialPage` → 11.57 KB
+- `AnadirRetoPage` → 5.71 KB
+- `PerfilPage` → 15.19 KB
+
+**Archivo:** `src/App.jsx` + `src/components/ui/PageLoader.jsx` (NUEVO, spinner de Suspense).
+
+---
+
+### 26.13 CSS migrado a custom properties
+
+**Cambio:** Todos los colores de clases CSS (`.btn-primary`, `.btn-secondary`, `.card`, `.input-field`, `.glass`) ahora usan CSS custom properties en vez de colores Tailwind hardcodeados. Esto permite que dark mode y temas funcionen sin duplicar clases.
+
+**Archivo:** `src/index.css` (reescrito).
+
+---
+
+### 26.14 Resumen de archivos v4
+
+| Tipo       | Archivo                                   | Cambio                                                          |
+| ---------- | ----------------------------------------- | --------------------------------------------------------------- |
+| NUEVO      | `src/contexts/ThemeContext.jsx`           | Dark mode + 5 temas de color                                    |
+| NUEVO      | `src/components/ErrorBoundary.jsx`        | Pantalla de error amigable                                      |
+| NUEVO      | `src/components/LoveNotes.jsx`            | Notas de amor (banner + compositor)                             |
+| NUEVO      | `src/components/CountdownWidget.jsx`      | Cuenta atras fechas especiales                                  |
+| NUEVO      | `src/components/ui/Lightbox.jsx`          | Visor de fotos fullscreen                                       |
+| NUEVO      | `src/components/ui/FloatingParticles.jsx` | Particulas decorativas                                          |
+| NUEVO      | `src/components/ui/PageLoader.jsx`        | Spinner para Suspense                                           |
+| NUEVO      | `src/utils/compressImage.js`              | Compresion de imagenes client-side                              |
+| NUEVO      | `src/utils/achievements.js`               | Sistema de 9 logros                                             |
+| MODIFICADO | `src/index.css`                           | Dark mode, CSS custom properties, placeholder fix               |
+| MODIFICADO | `tailwind.config.js`                      | darkMode: class, colores CSS variable                           |
+| MODIFICADO | `src/App.jsx`                             | ErrorBoundary, ThemeProvider, code splitting, FloatingParticles |
+| MODIFICADO | `src/pages/HomePage.jsx`                  | LoveNotes integrado                                             |
+| MODIFICADO | `src/pages/HistorialPage.jsx`             | Lightbox, timeline view, staggered lists                        |
+| MODIFICADO | `src/pages/PerfilPage.jsx`                | Dark toggle, temas, logros, countdown                           |
+| MODIFICADO | `src/components/ModalRespuesta.jsx`       | Compresion de imagenes                                          |

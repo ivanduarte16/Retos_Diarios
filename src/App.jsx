@@ -1,15 +1,21 @@
-import React, { useState } from 'react'
+import React, { lazy, Suspense, useState } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
+import ErrorBoundary from './components/ErrorBoundary'
 import BottomNav from './components/BottomNav'
 import Onboarding, { hasSeenOnboarding } from './components/Onboarding'
 import PageTransition from './components/ui/PageTransition'
-import LoginPage from './pages/LoginPage'
-import HomePage from './pages/HomePage'
-import HistorialPage from './pages/HistorialPage'
-import AnadirRetoPage from './pages/AnadirRetoPage'
-import PerfilPage from './pages/PerfilPage'
+import FloatingParticles from './components/ui/FloatingParticles'
+import PageLoader from './components/ui/PageLoader'
+
+// Code splitting: lazy load pages
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const HomePage = lazy(() => import('./pages/HomePage'))
+const HistorialPage = lazy(() => import('./pages/HistorialPage'))
+const AnadirRetoPage = lazy(() => import('./pages/AnadirRetoPage'))
+const PerfilPage = lazy(() => import('./pages/PerfilPage'))
 
 function ProtectedRoute() {
   const { currentUser } = useAuth()
@@ -22,7 +28,9 @@ function AnimatedOutlet() {
   return (
     <AnimatePresence mode="wait">
       <PageTransition key={location.pathname}>
-        <Outlet />
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
       </PageTransition>
     </AnimatePresence>
   )
@@ -31,6 +39,7 @@ function AnimatedOutlet() {
 function AppLayout() {
   return (
     <div className="flex h-screen w-full bg-cream md:bg-cream-dark">
+      <FloatingParticles />
       <div className="hidden md:block w-72 h-full flex-shrink-0 bg-surface shadow-paper-lg z-10">
         <div className="p-8 pb-4">
           <div className="text-3xl mb-2 font-display">RD</div>
@@ -62,28 +71,34 @@ function AppContent() {
   return (
     <>
       {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AppLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="historial" element={<HistorialPage />} />
-            <Route path="anadir" element={<AnadirRetoPage />} />
-            <Route path="perfil" element={<PerfilPage />} />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route index element={<HomePage />} />
+              <Route path="historial" element={<HistorialPage />} />
+              <Route path="anadir" element={<AnadirRetoPage />} />
+              <Route path="perfil" element={<PerfilPage />} />
+            </Route>
           </Route>
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </>
   )
 }
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }
