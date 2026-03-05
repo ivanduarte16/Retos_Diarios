@@ -6,6 +6,8 @@ import { getRetoDiario, getPost, getFechaHoy, getStats } from '../services/fireb
 import ModalRespuesta from '../components/ModalRespuesta'
 import ModalVerRespuestas from '../components/ModalVerRespuestas'
 
+const BINGO_SEEN_KEY = 'retos_diarios_bingo_seen_date'
+
 const CATEGORIA_CONFIG = {
   foto: { emoji: '📸', label: 'Foto', color: 'bg-blue-50 text-blue-500' },
   texto: { emoji: '💬', label: 'Texto', color: 'bg-emerald-50 text-emerald-500' },
@@ -18,6 +20,20 @@ const CATEGORIA_CONFIG = {
 function isGenericNombre(nombre) {
   const n = String(nombre || '').trim().toLowerCase()
   return !n || n === 'usuario'
+}
+
+function hasSeenBingoToday(fecha) {
+  try {
+    return localStorage.getItem(BINGO_SEEN_KEY) === fecha
+  } catch {
+    return false
+  }
+}
+
+function markBingoSeen(fecha) {
+  try {
+    localStorage.setItem(BINGO_SEEN_KEY, fecha)
+  } catch {}
 }
 
 function BingoBall({ onDone }) {
@@ -140,8 +156,17 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    loadData().then(() => setStage('bingo'))
-  }, [])
+    let alive = true
+    async function init() {
+      await loadData()
+      if (!alive) return
+      setStage(hasSeenBingoToday(fecha) ? 'card' : 'bingo')
+    }
+    init()
+    return () => {
+      alive = false
+    }
+  }, [fecha])
 
   const yaRespondi = post?.completadoPor?.includes(currentUser?.uid)
   const respuestaMia = (post?.respuestas || []).find(r => r?.usuarioId === currentUser?.uid)
@@ -193,7 +218,12 @@ export default function HomePage() {
 
         {stage === 'bingo' && retoDiario && (
           <motion.div key="bingo" exit={{ opacity: 0, scale: 0.95 }}>
-            <BingoBall onDone={() => setStage('card')} />
+            <BingoBall
+              onDone={() => {
+                markBingoSeen(fecha)
+                setStage('card')
+              }}
+            />
           </motion.div>
         )}
 
