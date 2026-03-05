@@ -1,27 +1,25 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Trophy, Flame, Star } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { getPosts, getStats, getUsuario } from '../services/firebaseService'
+import { formatFechaCorta, formatFechaLarga, toJsDate } from '../utils/date'
+import { isGenericNombre } from '../utils/user'
+import ModalShell from '../components/ui/ModalShell'
+import InlineError from '../components/ui/InlineError'
 
 const CATEGORIAS = [
   { id: 'all', label: 'Todos', emoji: '✨' },
   { id: 'foto', label: 'Foto', emoji: '📸' },
   { id: 'texto', label: 'Texto', emoji: '💬' },
-  { id: 'tonteria', label: 'Tontería', emoji: '🤪' },
-  { id: 'romantico', label: 'Romántico', emoji: '💌' },
+  { id: 'tonteria', label: 'Tonteria', emoji: '🤪' },
+  { id: 'romantico', label: 'Romantico', emoji: '💌' },
   { id: 'completos', label: 'Los dos', emoji: '🎊' },
 ]
-
-function isGenericNombre(nombre) {
-  const n = String(nombre || '').trim().toLowerCase()
-  return !n || n === 'usuario'
-}
 
 function PostCard({ post, onClick }) {
   const resp1 = post.respuestas?.[0]
   const resp2 = post.respuestas?.[1]
-  const fecha = post.fecha instanceof Date ? post.fecha : post.fecha?.toDate?.() || new Date(post.fecha)
 
   return (
     <motion.div
@@ -33,13 +31,9 @@ function PostCard({ post, onClick }) {
       onClick={onClick}
       className="card cursor-pointer active:shadow-paper-lg transition-shadow"
     >
-      <p className="font-body text-xs text-ink/35 mb-2">
-        {fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
-      </p>
+      <p className="font-body text-xs text-ink/35 mb-2">{formatFechaCorta(post.fecha)}</p>
 
-      <p className="font-display text-sm font-medium text-ink leading-snug mb-3 line-clamp-2">
-        {post.retoTexto}
-      </p>
+      <p className="font-display text-sm font-medium text-ink leading-snug mb-3 line-clamp-2">{post.retoTexto}</p>
 
       {(resp1?.fotos?.length > 0 || resp2?.fotos?.length > 0) && (
         <div className="grid grid-cols-2 gap-1 mb-3 rounded-xl overflow-hidden">
@@ -62,7 +56,7 @@ function PostCard({ post, onClick }) {
           ))}
         </div>
         <span className={`font-body text-xs px-2 py-0.5 rounded-full ${post.completadoTotal ? 'bg-emerald-100 text-emerald-600' : 'bg-cream-dark text-ink/40'}`}>
-          {post.completadoTotal ? '✅ Completo' : '⏳ Parcial'}
+          {post.completadoTotal ? 'Completo' : 'Parcial'}
         </span>
       </div>
     </motion.div>
@@ -72,9 +66,6 @@ function PostCard({ post, onClick }) {
 function PostDetail({ post, onClose }) {
   const { currentUser, userProfile } = useAuth()
   const [nombresPorUid, setNombresPorUid] = useState({})
-  const resp1 = post.respuestas?.[0]
-  const resp2 = post.respuestas?.[1]
-  const fecha = post.fecha instanceof Date ? post.fecha : post.fecha?.toDate?.() || new Date(post.fecha)
 
   useEffect(() => {
     let alive = true
@@ -120,68 +111,63 @@ function PostDetail({ post, onClose }) {
     if (!isGenericNombre(raw)) return raw
 
     if (resp.usuarioId && resp.usuarioId === currentUser?.uid) {
-      return userProfile?.nombre || 'Tú'
+      return userProfile?.nombre || 'Tu'
     }
     return 'Tu pareja'
   }
 
+  const resp1 = post.respuestas?.[0]
+  const resp2 = post.respuestas?.[1]
+
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6"
-        onClick={e => e.target === e.currentTarget && onClose()}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.98 }}
-          transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-          className="bg-surface w-full max-w-md rounded-3xl shadow-paper-lg p-6 pb-8 max-h-[85vh] overflow-y-auto overscroll-contain"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <p className="font-body text-xs text-ink/35">
-              {fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </p>
-            <button onClick={onClose} className="p-2 rounded-full hover:bg-cream-dark transition-colors">
-              <X size={20} className="text-ink/40" />
-            </button>
-          </div>
+    <ModalShell onClose={onClose} backdropClassName="bg-ink/60">
+      <div className="flex items-center justify-between mb-2">
+        <p className="font-body text-xs text-ink/35">{formatFechaLarga(post.fecha)}</p>
+        <button onClick={onClose} className="p-2 rounded-full hover:bg-cream-dark transition-colors">
+          <X size={20} className="text-ink/40" />
+        </button>
+      </div>
 
-          <h3 className="font-display text-xl font-medium text-ink mb-5 leading-snug">{post.retoTexto}</h3>
+      <h3 className="font-display text-xl font-medium text-ink mb-5 leading-snug">{post.retoTexto}</h3>
 
-          <div className="grid grid-cols-2 gap-4">
-            {[resp1, resp2].map((resp, i) =>
-              resp ? (
-                <div key={i} className="space-y-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xl">{resp.emoji}</span>
-                    <span className="font-body text-sm font-semibold text-ink">{resolveNombre(resp)}</span>
-                  </div>
-                  {resp.fotos?.map((url, j) => (
-                    <img key={j} src={url} alt="" className="w-full rounded-xl object-cover" />
-                  ))}
-                  {!resp.fotos?.length && (
-                    <div className="aspect-square bg-cream rounded-xl flex items-center justify-center">
-                      <span className="text-4xl opacity-20">{resp.emoji}</span>
-                    </div>
-                  )}
-                  {resp.texto && (
-                    <p className="font-body text-sm text-ink/70 leading-relaxed">{resp.texto}</p>
-                  )}
+      <div className="grid grid-cols-2 gap-4">
+        {[resp1, resp2].map((resp, i) =>
+          resp ? (
+            <div key={i} className="space-y-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl">{resp.emoji}</span>
+                <span className="font-body text-sm font-semibold text-ink">{resolveNombre(resp)}</span>
+              </div>
+              {resp.fotos?.map((url, j) => (
+                <img key={j} src={url} alt="" className="w-full rounded-xl object-cover" />
+              ))}
+              {!resp.fotos?.length && (
+                <div className="aspect-square bg-cream rounded-xl flex items-center justify-center">
+                  <span className="text-4xl opacity-20">{resp.emoji}</span>
                 </div>
-              ) : (
-                <div key={i} className="bg-cream rounded-2xl flex items-center justify-center min-h-32">
-                  <p className="font-body text-xs text-ink/30">Pendiente...</p>
-                </div>
-              )
-            )}
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+              )}
+              {resp.texto && <p className="font-body text-sm text-ink/70 leading-relaxed">{resp.texto}</p>}
+            </div>
+          ) : (
+            <div key={i} className="bg-cream rounded-2xl flex items-center justify-center min-h-32">
+              <p className="font-body text-xs text-ink/30">Pendiente...</p>
+            </div>
+          )
+        )}
+      </div>
+    </ModalShell>
+  )
+}
+
+function StatChip({ icon, value, label }) {
+  return (
+    <div className="bg-surface rounded-2xl p-3 shadow-paper text-center">
+      <div className="flex items-center justify-center gap-1 mb-0.5">
+        {icon}
+        <span className="font-body font-bold text-ink text-base">{value}</span>
+      </div>
+      <p className="font-body text-[10px] text-ink/40">{label}</p>
+    </div>
   )
 }
 
@@ -200,9 +186,9 @@ export default function HistorialPage() {
         setPosts(p)
         setStats(s)
         setError('')
-      } catch (e) {
-        console.error(e)
-        setError('No se pudo cargar el álbum. Intenta recargar.')
+      } catch (err) {
+        console.error(err)
+        setError('No se pudo cargar el album. Intenta recargar.')
       } finally {
         setLoading(false)
       }
@@ -210,28 +196,28 @@ export default function HistorialPage() {
     load()
   }, [])
 
-  const filtered = posts.filter(p => {
-    if (filtro === 'all') return true
-    if (filtro === 'completos') return p.completadoTotal
-    return p.categoria === filtro
-  })
+  const filtered = useMemo(
+    () =>
+      posts.filter(p => {
+        if (filtro === 'all') return true
+        if (filtro === 'completos') return p.completadoTotal
+        return p.categoria === filtro
+      }),
+    [posts, filtro]
+  )
 
   return (
     <div className="min-h-full bg-cream px-4 pt-6 pb-20 md:pb-2">
-      <h1 className="font-display text-2xl font-bold text-ink mb-1">Nuestro Álbum 📚</h1>
+      <h1 className="font-display text-2xl font-bold text-ink mb-1">Nuestro Album</h1>
       <p className="font-body text-xs text-ink/40 mb-5">Todos los retos que hemos compartido</p>
 
-      {error && (
-        <div className="card border border-coral/20 text-coral text-sm font-body mb-4">
-          {error}
-        </div>
-      )}
+      <InlineError message={error} className="mb-4" />
 
       {stats && (
         <div className="grid grid-cols-3 gap-2 mb-5">
           <StatChip icon={<Trophy size={14} className="text-mustard" />} value={stats.total} label="Completados" />
           <StatChip icon={<Flame size={14} className="text-coral" />} value={stats.racha} label="Racha actual" />
-          <StatChip icon={<Star size={14} className="text-mustard" />} value={stats.rachaMax} label="Racha máx." />
+          <StatChip icon={<Star size={14} className="text-mustard" />} value={stats.rachaMax} label="Racha max." />
         </div>
       )}
 
@@ -256,7 +242,7 @@ export default function HistorialPage() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-5xl mb-3">📭</div>
-          <p className="font-body text-ink/40">Ningún reto aquí todavía</p>
+          <p className="font-body text-ink/40">Ningun reto aqui todavia</p>
         </div>
       ) : (
         <motion.div layout className="grid grid-cols-2 gap-3 pb-4">
@@ -269,18 +255,6 @@ export default function HistorialPage() {
       )}
 
       {selectedPost && <PostDetail post={selectedPost} onClose={() => setSelectedPost(null)} />}
-    </div>
-  )
-}
-
-function StatChip({ icon, value, label }) {
-  return (
-    <div className="bg-surface rounded-2xl p-3 shadow-paper text-center">
-      <div className="flex items-center justify-center gap-1 mb-0.5">
-        {icon}
-        <span className="font-body font-bold text-ink text-base">{value}</span>
-      </div>
-      <p className="font-body text-[10px] text-ink/40">{label}</p>
     </div>
   )
 }

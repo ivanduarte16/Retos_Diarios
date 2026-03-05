@@ -1,12 +1,23 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LogOut, Save, Edit3, Heart } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { updateUsuario, getStats } from '../services/firebaseService'
-import { useNavigate } from 'react-router-dom'
+import InlineError from '../components/ui/InlineError'
+import ToastCenter from '../components/ui/ToastCenter'
 
 const EMOJIS = ['🧔', '👩', '👨', '👩‍🦱', '👨‍🦱', '😎', '🥰', '😍', '🤩', '😊', '🫶', '💪']
 const COLORS = ['#E8614A', '#F0B429', '#7C3AED', '#059669', '#2563EB', '#EC4899', '#F97316']
+
+function StatCard({ label, value, emoji }) {
+  return (
+    <div className="bg-surface rounded-2xl shadow-paper p-3 text-center">
+      <p className="font-body text-lg font-bold text-ink">{emoji} {value}</p>
+      <p className="font-body text-[10px] text-ink/40">{label}</p>
+    </div>
+  )
+}
 
 export default function PerfilPage() {
   const { currentUser, userProfile, setUserProfile, logout } = useAuth()
@@ -23,9 +34,9 @@ export default function PerfilPage() {
   useEffect(() => {
     getStats()
       .then(setStats)
-      .catch((e) => {
-        console.error(e)
-        setError('No se pudieron cargar tus estadísticas.')
+      .catch((err) => {
+        console.error(err)
+        setError('No se pudieron cargar tus estadisticas.')
       })
   }, [])
 
@@ -37,7 +48,7 @@ export default function PerfilPage() {
 
   async function handleSave() {
     if (!nombre.trim()) {
-      setError('El nombre no puede estar vacío.')
+      setError('El nombre no puede estar vacio.')
       return
     }
 
@@ -47,10 +58,10 @@ export default function PerfilPage() {
       await updateUsuario(currentUser.uid, { nombre: nombre.trim(), emoji, color })
       setUserProfile(prev => ({ ...prev, nombre: nombre.trim(), emoji, color }))
       setEditing(false)
-      setToast('¡Perfil actualizado! ' + emoji)
+      setToast(`Perfil actualizado ${emoji}`)
       setTimeout(() => setToast(''), 2500)
-    } catch (e) {
-      console.error(e)
+    } catch (err) {
+      console.error(err)
       setError('No se pudo guardar el perfil. Intenta de nuevo.')
     } finally {
       setSaving(false)
@@ -69,32 +80,25 @@ export default function PerfilPage() {
           animate={{ scale: [1, 1.05, 1] }}
           transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
           onClick={() => setEditing(true)}
-          style={{ backgroundColor: color + '22', borderColor: color }}
+          style={{ backgroundColor: `${color}22`, borderColor: color }}
           className="w-24 h-24 rounded-full border-4 flex items-center justify-center cursor-pointer text-5xl mb-3"
         >
           {emoji}
         </motion.div>
         <h1 className="font-display text-2xl font-bold text-ink">{userProfile?.nombre || 'Tu perfil'}</h1>
         <p className="font-body text-xs text-ink/40 mt-0.5">{currentUser?.email}</p>
-        <button
-          onClick={() => setEditing(true)}
-          className="flex items-center gap-1 mt-2 text-coral font-body text-xs font-medium"
-        >
+        <button onClick={() => setEditing(true)} className="flex items-center gap-1 mt-2 text-coral font-body text-xs font-medium">
           <Edit3 size={12} /> Editar perfil
         </button>
       </div>
 
-      {error && (
-        <div className="card border border-coral/20 text-coral text-sm font-body mb-4">
-          {error}
-        </div>
-      )}
+      <InlineError message={error} className="mb-4" />
 
       {stats && (
         <div className="grid grid-cols-3 gap-3 mb-6">
           <StatCard label="Retos" value={stats.total} emoji="🎯" />
           <StatCard label="Racha" value={`${stats.racha}🔥`} emoji="" />
-          <StatCard label="Récord" value={stats.rachaMax} emoji="⭐" />
+          <StatCard label="Record" value={stats.rachaMax} emoji="⭐" />
         </div>
       )}
 
@@ -116,7 +120,7 @@ export default function PerfilPage() {
                 value={nombre}
                 onChange={e => setNombre(e.target.value)}
                 className="input-field"
-                placeholder="¿Cómo te llamas?"
+                placeholder="Como te llamas?"
               />
             </div>
 
@@ -156,12 +160,7 @@ export default function PerfilPage() {
             </div>
 
             <div className="flex gap-2">
-              <button
-                onClick={() => setEditing(false)}
-                className="btn-secondary flex-1"
-              >
-                Cancelar
-              </button>
+              <button onClick={() => setEditing(false)} className="btn-secondary flex-1">Cancelar</button>
               <motion.button
                 onClick={handleSave}
                 disabled={saving}
@@ -182,8 +181,8 @@ export default function PerfilPage() {
           <span className="font-body text-sm font-semibold text-ink">Sobre la app</span>
         </div>
         <p className="font-body text-xs text-ink/50 leading-relaxed">
-          Retos Diarios es tu espacio privado para compartir un reto cada día con tu persona especial.
-          Cada día sale una bola del bingo y toca un reto diferente 🎯
+          Retos Diarios es tu espacio privado para compartir un reto cada dia con tu persona especial.
+          Cada dia sale una bola del bingo y toca un reto diferente.
         </p>
       </div>
 
@@ -193,32 +192,16 @@ export default function PerfilPage() {
         className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-100 text-red-400 font-body font-medium text-sm hover:bg-red-50 transition-colors"
       >
         <LogOut size={16} />
-        Cerrar sesión
+        Cerrar sesion
       </motion.button>
 
       <AnimatePresence>
         {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none bg-transparent px-4"
-          >
-            <span className="bg-ink text-white px-4 py-3 rounded-2xl shadow-paper-lg font-body text-sm">
-              {toast}
-            </span>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}>
+            <ToastCenter>{toast}</ToastCenter>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
-  )
-}
-
-function StatCard({ label, value, emoji }) {
-  return (
-    <div className="bg-surface rounded-2xl shadow-paper p-3 text-center">
-      <p className="font-body text-lg font-bold text-ink">{emoji} {value}</p>
-      <p className="font-body text-[10px] text-ink/40">{label}</p>
     </div>
   )
 }

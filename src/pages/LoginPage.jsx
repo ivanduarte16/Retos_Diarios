@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import InlineError from '../components/ui/InlineError'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -19,7 +20,7 @@ export default function LoginPage() {
       await login(email, password)
       navigate('/')
     } catch (err) {
-      setError(err.message || 'Error al iniciar sesión')
+      setError(err.message || 'Error al iniciar sesion')
     } finally {
       setLoading(false)
     }
@@ -27,7 +28,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-cream flex flex-col items-center justify-center p-6">
-      {/* Background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-coral/10" />
         <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-mustard/15" />
@@ -39,7 +39,6 @@ export default function LoginPage() {
         transition={{ duration: 0.6, ease: 'easeOut' }}
         className="w-full max-w-sm"
       >
-        {/* Logo / Header */}
         <div className="text-center mb-10">
           <motion.div
             animate={{ rotate: [0, -5, 5, -5, 0] }}
@@ -49,22 +48,13 @@ export default function LoginPage() {
             🎯
           </motion.div>
           <h1 className="font-display text-3xl font-bold text-ink">Retos Diarios</h1>
-          <p className="font-body text-ink/50 mt-2 text-sm">Tu app de retos para cada día juntos</p>
+          <p className="font-body text-ink/50 mt-2 text-sm">Tu app de retos para cada dia juntos</p>
         </div>
 
-        {/* Card */}
         <div className="card shadow-paper-lg">
-          <h2 className="font-display text-xl font-semibold text-ink mb-6">Bienvenido/a 💌</h2>
+          <h2 className="font-display text-xl font-semibold text-ink mb-6">Bienvenido</h2>
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-coral/10 border border-coral/20 rounded-2xl p-3 mb-4 text-coral text-sm font-body"
-            >
-              {error}
-            </motion.div>
-          )}
+          <InlineError message={error} className="rounded-2xl p-3 mb-4" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -82,13 +72,13 @@ export default function LoginPage() {
             </div>
             <div>
               <label className="font-body text-xs font-medium text-ink/50 uppercase tracking-wide mb-1 block">
-                Contraseña
+                Contrasena
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="********"
                 className="input-field"
                 required
               />
@@ -107,15 +97,17 @@ export default function LoginPage() {
                 >
                   ⏳
                 </motion.span>
-              ) : '✨ Entrar'}
+              ) : (
+                'Entrar'
+              )}
             </motion.button>
           </form>
 
-          {/* Demo hint */}
           <div className="mt-6 pt-4 border-t border-cream-dark">
             <p className="font-body text-xs text-ink/40 text-center">
               Modo demo: usa <strong>el@demo.com</strong> o <strong>ella@demo.com</strong>
-              <br />contraseña: <strong>demo123</strong>
+              <br />
+              contrasena: <strong>demo123</strong>
             </p>
           </div>
         </div>

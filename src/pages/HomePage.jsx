@@ -1,25 +1,23 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, Upload, Flame, Star } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { getRetoDiario, getPost, getFechaHoy, getStats } from '../services/firebaseService'
+import { formatFechaCabecera } from '../utils/date'
+import { isGenericNombre, resolveNombreUsuario } from '../utils/user'
 import ModalRespuesta from '../components/ModalRespuesta'
 import ModalVerRespuestas from '../components/ModalVerRespuestas'
+import InlineError from '../components/ui/InlineError'
 
 const BINGO_SEEN_KEY = 'retos_diarios_bingo_seen_date'
 
 const CATEGORIA_CONFIG = {
   foto: { emoji: '📸', label: 'Foto', color: 'bg-blue-50 text-blue-500' },
   texto: { emoji: '💬', label: 'Texto', color: 'bg-emerald-50 text-emerald-500' },
-  tonteria: { emoji: '🤪', label: 'Tontería', color: 'bg-purple-50 text-purple-500' },
-  romantico: { emoji: '💌', label: 'Romántico', color: 'bg-pink-50 text-pink-500' },
-  video: { emoji: '🎥', label: 'Vídeo', color: 'bg-orange-50 text-orange-500' },
+  tonteria: { emoji: '🤪', label: 'Tonteria', color: 'bg-purple-50 text-purple-500' },
+  romantico: { emoji: '💌', label: 'Romantico', color: 'bg-pink-50 text-pink-500' },
+  video: { emoji: '🎥', label: 'Video', color: 'bg-orange-50 text-orange-500' },
   juego: { emoji: '🎮', label: 'Juego', color: 'bg-indigo-50 text-indigo-500' },
-}
-
-function isGenericNombre(nombre) {
-  const n = String(nombre || '').trim().toLowerCase()
-  return !n || n === 'usuario'
 }
 
 function hasSeenBingoToday(fecha) {
@@ -63,7 +61,6 @@ function BingoBall({ onDone }) {
           </div>
         </div>
       </motion.div>
-
       <motion.p
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{ duration: 1.5, repeat: Infinity }}
@@ -80,12 +77,12 @@ function RetoCard({ retoDiario }) {
   const cfg = CATEGORIA_CONFIG[retoDiario.categoria] || CATEGORIA_CONFIG.foto
 
   useEffect(() => {
-    const t = setTimeout(() => setFlipped(true), 300)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setFlipped(true), 300)
+    return () => clearTimeout(timer)
   }, [])
 
   return (
-    <div className="perspective-1000 w-full aspect-[3/2]" onClick={() => setFlipped(f => !f)}>
+    <div className="perspective-1000 w-full aspect-[3/2]" onClick={() => setFlipped(v => !v)}>
       <motion.div
         animate={{ rotateY: flipped ? 0 : 180 }}
         transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
@@ -107,21 +104,32 @@ function RetoCard({ retoDiario }) {
             </span>
             <Star size={16} className="text-mustard" fill="currentColor" />
           </div>
-
           <div className="flex-1 flex items-center my-4">
             <p className="font-display text-xl font-medium text-ink leading-snug">{retoDiario.retoTexto}</p>
           </div>
-
           <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex-1 h-1 rounded-full bg-cream-dark" />
             ))}
           </div>
-
           <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-coral/5" />
           <div className="absolute -top-6 -left-6 w-20 h-20 rounded-full bg-mustard/8" />
         </div>
       </motion.div>
+    </div>
+  )
+}
+
+function StatusBadge({ label, emoji, done }) {
+  return (
+    <div className={`flex-1 flex items-center gap-2 rounded-2xl p-3 transition-all ${done ? 'bg-emerald-50' : 'bg-surface shadow-paper'}`}>
+      <span className="text-lg">{emoji}</span>
+      <div className="flex-1 min-w-0">
+        <p className="font-body text-xs font-medium truncate text-ink/60">{label}</p>
+        <p className={`font-body text-xs font-semibold ${done ? 'text-emerald-600' : 'text-ink/30'}`}>
+          {done ? 'Completado' : 'Pendiente'}
+        </p>
+      </div>
     </div>
   )
 }
@@ -134,7 +142,7 @@ export default function HomePage() {
   const [stage, setStage] = useState('loading')
   const [showModal, setShowModal] = useState(false)
   const [showVerModal, setShowVerModal] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState('')
 
   const fecha = getFechaHoy()
 
@@ -148,10 +156,10 @@ export default function HomePage() {
       setRetoDiario(reto)
       setPost(postData)
       setStats(statsData)
-      setError(null)
-    } catch (e) {
-      console.error(e)
-      setError('No se pudo cargar el reto. Comprueba tu conexión.')
+      setError('')
+    } catch (err) {
+      console.error(err)
+      setError('No se pudo cargar el reto. Comprueba tu conexion.')
     }
   }
 
@@ -168,23 +176,34 @@ export default function HomePage() {
     }
   }, [fecha])
 
+  const respuestaMia = useMemo(
+    () => (post?.respuestas || []).find(r => r?.usuarioId === currentUser?.uid),
+    [post?.respuestas, currentUser?.uid]
+  )
+  const respuestaPareja = useMemo(
+    () => (post?.respuestas || []).find(r => r?.usuarioId && r.usuarioId !== currentUser?.uid),
+    [post?.respuestas, currentUser?.uid]
+  )
+
   const yaRespondi = post?.completadoPor?.includes(currentUser?.uid)
-  const respuestaMia = (post?.respuestas || []).find(r => r?.usuarioId === currentUser?.uid)
-  const respuestaPareja = (post?.respuestas || []).find(r => r?.usuarioId && r.usuarioId !== currentUser?.uid)
   const parejaRespondio = Boolean(respuestaPareja)
 
-  const nombreMio = userProfile?.nombre || (!isGenericNombre(respuestaMia?.usuarioNombre) ? respuestaMia?.usuarioNombre : 'Tú')
+  const nombreMio = resolveNombreUsuario({
+    nombrePerfil: userProfile?.nombre,
+    nombreRespuesta: respuestaMia?.usuarioNombre,
+    nombreFallback: 'Tu',
+  })
   const emojiMio = userProfile?.emoji || respuestaMia?.emoji || '🙂'
-  const nombrePareja = !isGenericNombre(respuestaPareja?.usuarioNombre) ? respuestaPareja?.usuarioNombre : 'Tu pareja'
+  const nombrePareja = !isGenericNombre(respuestaPareja?.usuarioNombre)
+    ? respuestaPareja?.usuarioNombre
+    : 'Tu pareja'
   const emojiPareja = respuestaPareja?.emoji || '💛'
 
   return (
     <div className="min-h-full bg-cream px-4 pt-6 pb-20 md:pb-2 relative flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="font-body text-xs text-ink/40 uppercase tracking-wide">
-            {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
+          <p className="font-body text-xs text-ink/40 uppercase tracking-wide">{formatFechaCabecera(new Date())}</p>
           <h1 className="font-display text-2xl font-bold text-ink">
             Hola, {userProfile?.nombre || 'amor'} {userProfile?.emoji || '💛'}
           </h1>
@@ -197,11 +216,7 @@ export default function HomePage() {
         )}
       </div>
 
-      {error && (
-        <div className="card border border-coral/20 text-coral text-sm font-body mb-4">
-          {error}
-        </div>
-      )}
+      <InlineError message={error} className="mb-4" />
 
       <AnimatePresence mode="wait">
         {stage === 'loading' && (
@@ -243,7 +258,7 @@ export default function HomePage() {
                 className={`btn-primary w-full flex items-center justify-center gap-2 ${yaRespondi ? 'opacity-70' : ''}`}
               >
                 <Upload size={18} />
-                {yaRespondi ? 'Actualizar mi respuesta' : '✅ Subir mi respuesta'}
+                {yaRespondi ? 'Actualizar mi respuesta' : 'Subir mi respuesta'}
               </motion.button>
 
               {(yaRespondi || parejaRespondio) && (
@@ -253,7 +268,7 @@ export default function HomePage() {
                   className="btn-secondary w-full flex items-center justify-center gap-2"
                 >
                   <Eye size={18} />
-                  👀 Ver respuestas
+                  Ver respuestas
                 </motion.button>
               )}
             </div>
@@ -266,10 +281,10 @@ export default function HomePage() {
                 className="mt-5 card text-center"
               >
                 <p className="font-body text-2xl">
-                  🔥 {stats.racha} {stats.racha === 1 ? 'día' : 'días'} seguidos
+                  🔥 {stats.racha} {stats.racha === 1 ? 'dia' : 'dias'} seguidos
                 </p>
                 <p className="font-body text-xs text-ink/40 mt-1">
-                  {stats.total} retos completados juntos · Máx: {stats.rachaMax} días
+                  {stats.total} retos completados juntos · Max: {stats.rachaMax} dias
                 </p>
               </motion.div>
             )}
@@ -294,20 +309,6 @@ export default function HomePage() {
           onClose={() => setShowVerModal(false)}
         />
       )}
-    </div>
-  )
-}
-
-function StatusBadge({ label, emoji, done }) {
-  return (
-    <div className={`flex-1 flex items-center gap-2 rounded-2xl p-3 transition-all ${done ? 'bg-emerald-50' : 'bg-surface shadow-paper'}`}>
-      <span className="text-lg">{emoji}</span>
-      <div className="flex-1 min-w-0">
-        <p className="font-body text-xs font-medium truncate text-ink/60">{label}</p>
-        <p className={`font-body text-xs font-semibold ${done ? 'text-emerald-600' : 'text-ink/30'}`}>
-          {done ? '✅ Completado' : '⏳ Pendiente'}
-        </p>
-      </div>
     </div>
   )
 }

@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { X, Image as ImageIcon } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { getUsuario } from '../services/firebaseService'
-
-function isGenericNombre(nombre) {
-  const n = String(nombre || '').trim().toLowerCase()
-  return !n || n === 'usuario'
-}
+import ModalShell from './ui/ModalShell'
+import { isGenericNombre } from '../utils/user'
 
 export default function ModalVerRespuestas({ post, retoDiario, onClose }) {
   const { currentUser, userProfile } = useAuth()
@@ -57,7 +53,7 @@ export default function ModalVerRespuestas({ post, retoDiario, onClose }) {
     if (!isGenericNombre(raw)) return raw
 
     if (resp.usuarioId && resp.usuarioId === currentUser?.uid) {
-      return userProfile?.nombre || 'Tú'
+      return userProfile?.nombre || 'Tu'
     }
     return 'Tu pareja'
   }
@@ -68,46 +64,30 @@ export default function ModalVerRespuestas({ post, retoDiario, onClose }) {
   const resp2 = post.respuestas?.[1]
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6"
-        onClick={e => e.target === e.currentTarget && onClose()}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.98 }}
-          transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-          className="bg-surface w-full max-w-md rounded-3xl shadow-paper-lg p-6 pb-8 max-h-[85vh] overflow-y-auto overscroll-contain"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-xl font-semibold text-ink">Respuestas</h3>
-            <button onClick={onClose} className="p-2 rounded-full hover:bg-cream-dark transition-colors">
-              <X size={20} className="text-ink/40" />
-            </button>
-          </div>
+    <ModalShell onClose={onClose}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-display text-xl font-semibold text-ink">Respuestas</h3>
+        <button onClick={onClose} className="p-2 rounded-full hover:bg-cream-dark transition-colors">
+          <X size={20} className="text-ink/40" />
+        </button>
+      </div>
 
-          <div className="bg-cream rounded-2xl p-3 mb-5">
-            <p className="font-body text-sm text-ink/60 leading-relaxed">{retoDiario?.retoTexto}</p>
-          </div>
+      <div className="bg-cream rounded-2xl p-3 mb-5">
+        <p className="font-body text-sm text-ink/60 leading-relaxed">{retoDiario?.retoTexto}</p>
+      </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <RespuestaColumn resp={resp1} nombre={resolveNombre(resp1)} />
-            <RespuestaColumn resp={resp2} nombre={resolveNombre(resp2)} />
-          </div>
+      <div className="grid grid-cols-2 gap-3">
+        <RespuestaColumn resp={resp1} nombre={resolveNombre(resp1)} />
+        <RespuestaColumn resp={resp2} nombre={resolveNombre(resp2)} />
+      </div>
 
-          {post.completadoTotal && (
-            <div className="mt-5 text-center">
-              <span className="text-2xl">🎊</span>
-              <p className="font-body text-sm text-ink/50 mt-1">¡Los dos habéis completado el reto!</p>
-            </div>
-          )}
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      {post.completadoTotal && (
+        <div className="mt-5 text-center">
+          <span className="text-2xl">🎊</span>
+          <p className="font-body text-sm text-ink/50 mt-1">Los dos habeis completado el reto</p>
+        </div>
+      )}
+    </ModalShell>
   )
 }
 

@@ -1,22 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import {
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-} from 'firebase/auth'
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { auth, db, isDemoMode } from '../firebase'
 
 const AuthContext = createContext(null)
 
-export function useAuth() {
-  return useContext(AuthContext)
-}
-
-// Demo users for when Firebase is not configured
 const DEMO_USERS = {
-  'el@demo.com':  { uid: 'user1', email: 'el@demo.com',  nombre: 'Él',  emoji: '🧔', color: '#E8614A' },
-  'ella@demo.com':{ uid: 'user2', email: 'ella@demo.com', nombre: 'Ella', emoji: '👩', color: '#F0B429' },
+  'el@demo.com': { uid: 'user1', email: 'el@demo.com', nombre: 'El', emoji: '🧔', color: '#E8614A' },
+  'ella@demo.com': { uid: 'user2', email: 'ella@demo.com', nombre: 'Ella', emoji: '👩', color: '#F0B429' },
 }
 
 function getDefaultNombre(email) {
@@ -26,6 +17,10 @@ function getDefaultNombre(email) {
   return clean.charAt(0).toUpperCase() + clean.slice(1)
 }
 
+export function useAuth() {
+  return useContext(AuthContext)
+}
+
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [userProfile, setUserProfile] = useState(null)
@@ -33,15 +28,16 @@ export function AuthProvider({ children }) {
 
   async function login(email, password) {
     if (isDemoMode) {
-      const demo = DEMO_USERS[email.toLowerCase()]
+      const demo = DEMO_USERS[(email || '').toLowerCase()]
       if (demo && password === 'demo123') {
         setCurrentUser({ uid: demo.uid, email: demo.email })
         setUserProfile(demo)
         localStorage.setItem('demoUser', JSON.stringify(demo))
         return demo
       }
-      throw new Error('Credenciales incorrectas. En modo demo usa el@demo.com o ella@demo.com con contraseña: demo123')
+      throw new Error('Credenciales incorrectas. En modo demo usa el@demo.com o ella@demo.com con contrasena demo123.')
     }
+
     return signInWithEmailAndPassword(auth, email, password)
   }
 
@@ -85,7 +81,7 @@ export function AuthProvider({ children }) {
         } else {
           const profile = {
             nombre: getDefaultNombre(user.email),
-            emoji: '😊',
+            emoji: '🙂',
             color: '#E8614A',
           }
           await setDoc(userRef, profile, { merge: true })
@@ -95,21 +91,25 @@ export function AuthProvider({ children }) {
         console.error('Error cargando perfil de usuario', err)
         setUserProfile({
           nombre: getDefaultNombre(user.email),
-          emoji: '😊',
+          emoji: '🙂',
           color: '#E8614A',
         })
       } finally {
         setLoading(false)
       }
     })
+
     return unsub
   }, [])
 
-  const value = { currentUser, userProfile, setUserProfile, login, logout, isDemoMode }
+  const value = {
+    currentUser,
+    userProfile,
+    setUserProfile,
+    login,
+    logout,
+    isDemoMode,
+  }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>
 }

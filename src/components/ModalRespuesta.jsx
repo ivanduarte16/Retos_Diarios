@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { useEffect, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import { X, Image, Send, Loader } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { getFechaHoy, subirRespuesta } from '../services/firebaseService'
+import ModalShell from './ui/ModalShell'
+import InlineError from './ui/InlineError'
 
 export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
   const { currentUser, userProfile } = useAuth()
@@ -28,9 +30,7 @@ export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
     setPreviews(prev => prev.filter((_, i) => i !== idx))
   }
 
-  useEffect(() => {
-    return () => previews.forEach(url => URL.revokeObjectURL(url))
-  }, [previews])
+  useEffect(() => () => previews.forEach(url => URL.revokeObjectURL(url)), [previews])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -57,7 +57,7 @@ export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
 
       setTimeout(() => {
         onSuccess?.()
-        onClose()
+        onClose?.()
       }, 1800)
     } catch (err) {
       console.error(err)
@@ -68,109 +68,89 @@ export default function ModalRespuesta({ onClose, onSuccess, retoDiario }) {
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6"
-        onClick={e => e.target === e.currentTarget && onClose()}
-      >
+    <ModalShell onClose={onClose}>
+      {done ? (
         <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.98 }}
-          transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-          className="bg-surface w-full max-w-md rounded-3xl shadow-paper-lg p-6 pb-8 max-h-[85vh] overflow-y-auto overscroll-contain"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="min-h-[280px] flex flex-col items-center justify-center text-center"
         >
-          {done ? (
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="min-h-[280px] flex flex-col items-center justify-center text-center"
-            >
-              <div className="text-6xl mb-3">🎉</div>
-              <h3 className="font-display text-2xl font-bold text-ink">¡Enviado!</h3>
-              <p className="font-body text-ink/50 mt-1">Tu respuesta está guardada 💌</p>
-            </motion.div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h3 className="font-display text-xl font-semibold text-ink">Mi respuesta</h3>
-                  <p className="font-body text-xs text-ink/40 mt-0.5 line-clamp-1">{retoDiario?.retoTexto}</p>
-                </div>
-                <button onClick={onClose} className="p-2 rounded-full hover:bg-cream-dark transition-colors">
-                  <X size={20} className="text-ink/40" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {submitError && (
-                  <div className="bg-coral/10 border border-coral/20 rounded-2xl p-3 text-coral text-sm font-body">
-                    {submitError}
-                  </div>
-                )}
-
-                <textarea
-                  value={texto}
-                  onChange={e => setTexto(e.target.value)}
-                  placeholder="Cuéntame algo... (opcional)"
-                  className="input-field resize-none"
-                  rows={3}
-                  maxLength={500}
-                />
-
-                {previews.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2">
-                    {previews.map((src, i) => (
-                      <div key={i} className="relative aspect-square rounded-xl overflow-hidden">
-                        <img src={src} alt="" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => removeFile(i)}
-                          className="absolute top-1 right-1 w-5 h-5 bg-ink/70 rounded-full flex items-center justify-center"
-                        >
-                          <X size={10} className="text-white" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {archivos.length < 4 && (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full border-2 border-dashed border-cream-dark rounded-2xl py-4 flex items-center justify-center gap-2 text-ink/40 hover:border-coral/40 hover:text-coral transition-all"
-                  >
-                    <Image size={18} />
-                    <span className="font-body text-sm">Añadir fotos ({archivos.length}/4)</span>
-                  </button>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleFiles}
-                />
-
-                <motion.button
-                  type="submit"
-                  disabled={loading || (!texto.trim() && archivos.length === 0)}
-                  whileTap={{ scale: 0.97 }}
-                  className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {loading ? <Loader size={18} className="animate-spin" /> : <Send size={18} />}
-                  {loading ? 'Enviando...' : 'Enviar respuesta 🎯'}
-                </motion.button>
-              </form>
-            </>
-          )}
+          <div className="text-6xl mb-3">🎉</div>
+          <h3 className="font-display text-2xl font-bold text-ink">Enviado</h3>
+          <p className="font-body text-ink/50 mt-1">Tu respuesta esta guardada</p>
         </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      ) : (
+        <>
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="font-display text-xl font-semibold text-ink">Mi respuesta</h3>
+              <p className="font-body text-xs text-ink/40 mt-0.5 line-clamp-1">{retoDiario?.retoTexto}</p>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-cream-dark transition-colors">
+              <X size={20} className="text-ink/40" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <InlineError message={submitError} className="rounded-2xl p-3 mb-0" />
+
+            <textarea
+              value={texto}
+              onChange={e => setTexto(e.target.value)}
+              placeholder="Cuentame algo... (opcional)"
+              className="input-field resize-none"
+              rows={3}
+              maxLength={500}
+            />
+
+            {previews.length > 0 && (
+              <div className="grid grid-cols-4 gap-2">
+                {previews.map((src, i) => (
+                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden">
+                    <img src={src} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      className="absolute top-1 right-1 w-5 h-5 bg-ink/70 rounded-full flex items-center justify-center"
+                    >
+                      <X size={10} className="text-white" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {archivos.length < 4 && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-cream-dark rounded-2xl py-4 flex items-center justify-center gap-2 text-ink/40 hover:border-coral/40 hover:text-coral transition-all"
+              >
+                <Image size={18} />
+                <span className="font-body text-sm">Anadir fotos ({archivos.length}/4)</span>
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFiles}
+            />
+
+            <motion.button
+              type="submit"
+              disabled={loading || (!texto.trim() && archivos.length === 0)}
+              whileTap={{ scale: 0.97 }}
+              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {loading ? <Loader size={18} className="animate-spin" /> : <Send size={18} />}
+              {loading ? 'Enviando...' : 'Enviar respuesta'}
+            </motion.button>
+          </form>
+        </>
+      )}
+    </ModalShell>
   )
 }
