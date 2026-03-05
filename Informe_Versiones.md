@@ -89,9 +89,14 @@ Retos_Diarios/
 |  |  |- BottomNav.jsx
 |  |  |- ModalRespuesta.jsx
 |  |  |- ModalVerRespuestas.jsx
+|  |  |- Onboarding.jsx               (NUEVO v3 — pantalla intro)
 |  |  |- ui/
+|  |     |- ActivityHeatmap.jsx        (NUEVO v3 — heatmap actividad)
+|  |     |- AnimatedCounter.jsx        (NUEVO v3 — contador animado)
 |  |     |- InlineError.jsx
 |  |     |- ModalShell.jsx
+|  |     |- PageTransition.jsx         (NUEVO v3 — transiciones pagina)
+|  |     |- Skeleton.jsx               (NUEVO v3 — skeleton loaders)
 |  |     |- ToastCenter.jsx
 |  |- contexts/
 |  |  |- AuthContext.jsx
@@ -593,6 +598,7 @@ Para pasar de "funciona bien" a "operacion robusta a largo plazo", lo prioritari
 
 - `v1` (2026-03-05): primera version integral del estado actual del proyecto.
 - `v2` (2026-03-05): refactorizacion completa — eliminacion de codigo duplicado, optimizacion de rendimiento, soporte PWA. Detalle en seccion 24.
+- `v3` (2026-03-05): mejoras visuales y de UX — glassmorphism, transiciones, skeletons, heatmap, confeti, onboarding, micro-animaciones. Detalle en seccion 25.
 
 ---
 
@@ -756,3 +762,163 @@ Esta seccion detalla todos los cambios realizados en la version v2.
 | MODIFICADO | `src/pages/PerfilPage.jsx`              | try/catch en handleLogout                            |
 | MODIFICADO | `src/components/ModalVerRespuestas.jsx` | useNombresPorUid hook                                |
 | MODIFICADO | `index.html`                            | theme-color + manifest link                          |
+
+---
+
+## 25. Cambios v3 — Mejoras visuales y UX premium (2026-03-05)
+
+Esta seccion detalla las 12 mejoras visuales, de experiencia de usuario y de wow-factor.
+
+### 25.1 Glassmorphism en navegacion y modales
+
+**Cambio:** Fondos solidos blancos reemplazados por fondos translucidos con efecto de cristal esmerilado.
+
+**Implementacion:**
+
+- Nueva clase CSS `.glass` (`bg-white/70 backdrop-blur-xl border border-white/30`)
+- `BottomNav.jsx`: barra inferior ahora usa `.glass` en vez de `bg-surface`
+- `ModalShell.jsx`: backdrop con `backdrop-blur-md` (incrementado de `blur-sm`)
+
+---
+
+### 25.2 Transiciones de pagina fluidas
+
+**Cambio:** Al cambiar entre pestanas, el contenido ahora hace un fade + slide sutil en vez de aparecer instantaneamente.
+
+**Implementacion:**
+
+- `PageTransition.jsx` (NUEVO): wrapper con `motion.div` que aplica fade + 20px slide vertical
+- `App.jsx`: nuevo componente `AnimatedOutlet` que envuelve `Outlet` en `AnimatePresence mode="wait"` + `PageTransition`
+
+---
+
+### 25.3 Skeleton loaders
+
+**Cambio:** Pantallas vacias durante la carga reemplazadas por placeholders pulsantes que simulan la estructura del contenido.
+
+**Componentes creados en `Skeleton.jsx`:**
+
+- `Skeleton`: base con animacion shimmer
+- `SkeletonCard`: placeholder de post card
+- `SkeletonRetoCard`: placeholder de la tarjeta del reto
+- `SkeletonStats`: 3 chips de estadisticas
+- `SkeletonProfile`: avatar + nombre del perfil
+
+**Uso:** `HomePage.jsx` (stage loading), `HistorialPage.jsx` (loading grid), `PerfilPage.jsx` (perfil + stats)
+
+---
+
+### 25.4 Header con gradiente dinamico segun hora
+
+**Cambio:** El saludo de la home page cambia segun la hora del dia y tiene un degradado de fondo acorde.
+
+- 00:00-06:59: "Buenas noches" + degradado indigo/purpura
+- 07:00-12:59: "Buenos dias" + degradado mustard/coral
+- 13:00-19:59: "Buenas tardes" + degradado coral/pink
+- 20:00-23:59: "Buenas noches" + degradado indigo/purpura
+
+**Archivo:** `src/pages/HomePage.jsx`
+
+---
+
+### 25.5 Confeti tematico al completar ambos
+
+**Cambio:** Cuando ambos usuarios completan el reto del dia, se dispara una explosion de confeti con los colores del tema (coral, mustard, pink, purple).
+
+**Implementacion:** Usa `canvas-confetti` (ya estaba en dependencies). Doble rafaga con 300ms de delay para efecto mas rico. Se detecta el cambio de `completadoTotal` para evitar repetir en recargas.
+
+**Archivo:** `src/pages/HomePage.jsx`
+
+---
+
+### 25.6 Calendario de actividad (heatmap)
+
+**Cambio:** Mapa de calor estilo GitHub que muestra los ultimos 84 dias de actividad.
+
+- Verde = completado por ambos
+- Amarillo = completado parcialmente
+- Gris = sin actividad
+
+**Implementacion:** `ActivityHeatmap.jsx` (NUEVO), CSS grid puro sin librerias. Cada celda entra con animacion escalonada (`scale: 0 -> 1`).
+
+**Uso:** `HistorialPage.jsx` y `PerfilPage.jsx`
+
+---
+
+### 25.7 Contadores animados de estadisticas
+
+**Cambio:** Los numeros de racha, total de retos y record ahora "ruedan" hacia arriba con efecto odometro.
+
+**Implementacion:** `AnimatedCounter.jsx` (NUEVO). Interpolacion por pasos con `setInterval`, maximo 20 frames, con micro-animacion de `motion.span` en cada cambio.
+
+**Uso:** Stats en `HomePage.jsx`, `HistorialPage.jsx`, `PerfilPage.jsx`, y chip de racha
+
+---
+
+### 25.8 Revelacion progresiva del texto del reto
+
+**Cambio:** Al voltear la tarjeta del reto, el texto aparece con efecto blur-to-focus (desenfoque a enfoque) que simula el enfoque de una camara.
+
+**Implementacion:** `motion.p` con `filter: blur(12px) -> blur(0px)` y opacity animada. Las barras decorativas inferiores tambien aparecen escalonadas.
+
+**Archivo:** `src/pages/HomePage.jsx > RetoCard`
+
+---
+
+### 25.9 Onboarding de primera vez
+
+**Cambio:** La primera vez que se abre la app, se muestra una pantalla de introduccion de 3 slides con emojis animados, textos explicativos y navegacion por puntos.
+
+**Slides:**
+
+1. "Cada dia, un reto diferente" (bola bingo)
+2. "Comparte con tu persona especial" (corazones)
+3. "Manten la racha viva" (fuego)
+
+**Implementacion:** `Onboarding.jsx` (NUEVO). Flag en `localStorage` para no repetir. Boton "Saltar" y "Siguiente" con transiciones horizontales.
+
+**Archivo:** `src/App.jsx` (condicional en `AppContent`)
+
+---
+
+### 25.10 Empty states con personalidad
+
+**Cambio:** Cuando no hay contenido (historial vacio, sin retos propios), en vez de texto plano se muestra un emoji grande animado (flotando) con texto motivacional contextual.
+
+**Archivos:**
+
+- `HistorialPage.jsx`: emoji diferente segun filtro activo (📭, 🌟, 🔍)
+- `AnadirRetoPage.jsx`: emoji 🎰 con texto "Mete tu primer reto al bingo"
+
+---
+
+### 25.11 Micro-animaciones mejoradas
+
+**Cambio:** Botones, inputs y selectores tienen feedback tactil mas pronunciado.
+
+- Botones: `scale(0.93)` en vez de `scale(0.95)`, mas `hover:shadow-paper-lg`
+- Inputs: `border-2 border-transparent` + glow coral suave en foco + cambio de fondo
+- Emoji/color selectors en Perfil: `motion.button` con `whileTap={{ scale: 0.85 }}`
+- Filter chips con hover shadow
+
+**Archivos:** `index.css`, `HomePage.jsx`, `AnadirRetoPage.jsx`, `PerfilPage.jsx`
+
+---
+
+### 25.12 Resumen de archivos v3
+
+| Tipo       | Archivo                                 | Cambio                                               |
+| ---------- | --------------------------------------- | ---------------------------------------------------- |
+| NUEVO      | `src/components/ui/Skeleton.jsx`        | 5 componentes skeleton loader                        |
+| NUEVO      | `src/components/ui/AnimatedCounter.jsx` | Contador con efecto odometro                         |
+| NUEVO      | `src/components/ui/PageTransition.jsx`  | Wrapper de transicion de pagina                      |
+| NUEVO      | `src/components/ui/ActivityHeatmap.jsx` | Heatmap de actividad tipo GitHub                     |
+| NUEVO      | `src/components/Onboarding.jsx`         | Pantalla intro de 3 slides                           |
+| MODIFICADO | `src/index.css`                         | `.glass`, shimmer, micro-animaciones, scrollbar-hide |
+| MODIFICADO | `src/App.jsx`                           | AnimatedOutlet, Onboarding condicional               |
+| MODIFICADO | `src/components/BottomNav.jsx`          | Glassmorphism en barra inferior                      |
+| MODIFICADO | `src/components/ui/ModalShell.jsx`      | backdrop-blur-md                                     |
+| MODIFICADO | `src/pages/HomePage.jsx`                | Gradiente, skeletons, confeti, blur reveal, counters |
+| MODIFICADO | `src/pages/HistorialPage.jsx`           | Heatmap, skeletons, counters, empty states           |
+| MODIFICADO | `src/pages/AnadirRetoPage.jsx`          | Empty state animado, micro-animaciones               |
+| MODIFICADO | `src/pages/PerfilPage.jsx`              | Heatmap, skeletons, counters, micro-animaciones      |

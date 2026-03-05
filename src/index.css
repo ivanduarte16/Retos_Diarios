@@ -32,12 +32,14 @@
 @layer components {
   .btn-primary {
     @apply bg-coral text-white font-body font-medium rounded-2xl px-6 py-3 shadow-paper
-           active:scale-95 transition-all duration-150 hover:bg-coral-dark;
+           active:scale-[0.93] transition-all duration-150 hover:bg-coral-dark
+           hover:shadow-paper-lg;
   }
 
   .btn-secondary {
     @apply bg-cream-dark text-ink font-body font-medium rounded-2xl px-6 py-3 shadow-paper
-           active:scale-95 transition-all duration-150 hover:bg-cream;
+           active:scale-[0.93] transition-all duration-150 hover:bg-cream
+           hover:shadow-paper-lg;
   }
 
   .card {
@@ -45,8 +47,12 @@
   }
 
   .input-field {
-    @apply bg-cream-dark border-none outline-none rounded-2xl px-4 py-3 font-body text-ink
-           placeholder:text-ink/40 focus:ring-2 focus:ring-coral/30 w-full transition-all;
+    @apply bg-cream-dark border-2 border-transparent outline-none rounded-2xl px-4 py-3 font-body text-ink
+           placeholder:text-ink/40 focus:border-coral/30 focus:bg-cream focus:shadow-[0_0_0_3px_rgba(232,97,74,0.08)] w-full transition-all duration-200;
+  }
+
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/30;
   }
 }
 
@@ -79,6 +85,15 @@
   border-radius: 99px;
 }
 
+/* Hide scrollbar for filter rows */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Toast */
 .toast-enter {
   animation: slideUp 0.3s ease-out;
@@ -92,6 +107,16 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Shimmer for skeleton loaders */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }
 

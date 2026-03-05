@@ -42,7 +42,7 @@ export default function BottomNav({ isSidebar = false }) {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 w-full bg-surface border-t border-cream-dark z-50 safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 w-full glass shadow-paper-lg z-50 safe-bottom">
       <div className="flex items-stretch h-16">
         {tabs.map(({ to, label, Icon }) => (
           <NavLink

@@ -16,7 +16,7 @@ export default function ModalShell({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className={`fixed inset-0 ${backdropClassName} backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6`}
+        className={`fixed inset-0 ${backdropClassName} backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6`}
         onClick={e => e.target === e.currentTarget && onClose?.()}
       >
         <motion.div

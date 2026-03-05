@@ -7,8 +7,9 @@ import { CATEGORIAS_HISTORIAL } from '../utils/categorias'
 import useNombresPorUid from '../hooks/useNombresPorUid'
 import ModalShell from '../components/ui/ModalShell'
 import InlineError from '../components/ui/InlineError'
-
-
+import AnimatedCounter from '../components/ui/AnimatedCounter'
+import ActivityHeatmap from '../components/ui/ActivityHeatmap'
+import { SkeletonCard, SkeletonStats } from '../components/ui/Skeleton'
 
 function PostCard({ post, onClick }) {
   const resp1 = post.respuestas?.[0]
@@ -20,9 +21,9 @@ function PostCard({ post, onClick }) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.96 }}
       onClick={onClick}
-      className="card cursor-pointer active:shadow-paper-lg transition-shadow"
+      className="card cursor-pointer hover:shadow-paper-lg active:shadow-paper-lg transition-shadow"
     >
       <p className="font-body text-xs text-ink/35 mb-2">{formatFechaCorta(post.fecha)}</p>
 
@@ -49,7 +50,7 @@ function PostCard({ post, onClick }) {
           ))}
         </div>
         <span className={`font-body text-xs px-2 py-0.5 rounded-full ${post.completadoTotal ? 'bg-emerald-100 text-emerald-600' : 'bg-cream-dark text-ink/40'}`}>
-          {post.completadoTotal ? 'Completo' : 'Parcial'}
+          {post.completadoTotal ? 'Completo ✓' : 'Parcial'}
         </span>
       </div>
     </motion.div>
@@ -107,7 +108,7 @@ function StatChip({ icon, value, label }) {
     <div className="bg-surface rounded-2xl p-3 shadow-paper text-center">
       <div className="flex items-center justify-center gap-1 mb-0.5">
         {icon}
-        <span className="font-body font-bold text-ink text-base">{value}</span>
+        <AnimatedCounter value={value} className="font-body font-bold text-ink text-base" />
       </div>
       <p className="font-body text-[10px] text-ink/40">{label}</p>
     </div>
@@ -156,11 +157,18 @@ export default function HistorialPage() {
 
       <InlineError message={error} className="mb-4" />
 
-      {stats && (
+      {loading ? <SkeletonStats /> : stats && (
         <div className="grid grid-cols-3 gap-2 mb-5">
           <StatChip icon={<Trophy size={14} className="text-mustard" />} value={stats.total} label="Completados" />
           <StatChip icon={<Flame size={14} className="text-coral" />} value={stats.racha} label="Racha actual" />
           <StatChip icon={<Star size={14} className="text-mustard" />} value={stats.rachaMax} label="Racha max." />
+        </div>
+      )}
+
+      {/* Activity heatmap */}
+      {!loading && posts.length > 0 && (
+        <div className="mb-5">
+          <ActivityHeatmap posts={posts} />
         </div>
       )}
 
@@ -169,7 +177,7 @@ export default function HistorialPage() {
           <button
             key={cat.id}
             onClick={() => setFiltro(cat.id)}
-            className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full font-body text-xs font-medium transition-all ${filtro === cat.id ? 'bg-coral text-white shadow-paper' : 'bg-surface text-ink/50 shadow-paper'}`}
+            className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full font-body text-xs font-medium transition-all ${filtro === cat.id ? 'bg-coral text-white shadow-paper' : 'bg-surface text-ink/50 shadow-paper hover:shadow-paper-lg'}`}
           >
             {cat.emoji} {cat.label}
           </button>
@@ -179,14 +187,29 @@ export default function HistorialPage() {
       {loading ? (
         <div className="grid grid-cols-2 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-surface rounded-3xl h-40 animate-pulse" />
+            <SkeletonCard key={i} />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="text-5xl mb-3">📭</div>
-          <p className="font-body text-ink/40">Ningun reto aqui todavia</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center py-16"
+        >
+          <motion.div
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="text-6xl mb-4"
+          >
+            {filtro === 'all' ? '📭' : filtro === 'completos' ? '🌟' : '🔍'}
+          </motion.div>
+          <p className="font-display text-lg font-semibold text-ink/50 mb-1">Nada por aqui</p>
+          <p className="font-body text-xs text-ink/30">
+            {filtro === 'all'
+              ? 'Aun no habeis completado retos juntos. El primero esta por llegar!'
+              : 'No hay retos con este filtro. Prueba otra categoria!'}
+          </p>
+        </motion.div>
       ) : (
         <motion.div layout className="grid grid-cols-2 gap-3 pb-4">
           <AnimatePresence>

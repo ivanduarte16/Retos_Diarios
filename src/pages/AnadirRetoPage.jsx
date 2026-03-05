@@ -147,7 +147,7 @@ export default function AnadirRetoPage() {
         <motion.button
           type="submit"
           disabled={loading || !texto.trim()}
-          whileTap={{ scale: 0.97 }}
+          whileTap={{ scale: 0.93 }}
           className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
         >
           <Send size={18} />
@@ -192,10 +192,21 @@ export default function AnadirRetoPage() {
       )}
 
       {!misRetos.length && !loading && (
-        <div className="card mt-8 flex items-center gap-3">
-          <ImageIcon size={16} className="text-ink/30" />
-          <p className="font-body text-xs text-ink/40">Todavia no has anadido retos personalizados.</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-8 text-center py-8"
+        >
+          <motion.div
+            animate={{ y: [0, -5, 0], rotate: [0, -3, 3, 0] }}
+            transition={{ duration: 2.5, repeat: Infinity }}
+            className="text-5xl mb-3"
+          >
+            🎰
+          </motion.div>
+          <p className="font-display text-base font-semibold text-ink/50 mb-1">Todavia vacias</p>
+          <p className="font-body text-xs text-ink/30">Mete tu primer reto al bingo y esperalo en el sorteo!</p>
+        </motion.div>
       )}
 
       <AnimatePresence>

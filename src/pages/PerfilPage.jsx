@@ -3,9 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { LogOut, Save, Edit3, Heart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { updateUsuario, getStats } from '../services/firebaseService'
+import { updateUsuario, getPosts, calcStats } from '../services/firebaseService'
 import InlineError from '../components/ui/InlineError'
 import ToastCenter from '../components/ui/ToastCenter'
+import AnimatedCounter from '../components/ui/AnimatedCounter'
+import ActivityHeatmap from '../components/ui/ActivityHeatmap'
+import { SkeletonProfile, SkeletonStats } from '../components/ui/Skeleton'
 
 const EMOJIS = ['🧔', '👩', '👨', '👩‍🦱', '👨‍🦱', '😎', '🥰', '😍', '🤩', '😊', '🫶', '💪']
 const COLORS = ['#E8614A', '#F0B429', '#7C3AED', '#059669', '#2563EB', '#EC4899', '#F97316']
@@ -13,7 +16,9 @@ const COLORS = ['#E8614A', '#F0B429', '#7C3AED', '#059669', '#2563EB', '#EC4899'
 function StatCard({ label, value, emoji }) {
   return (
     <div className="bg-surface rounded-2xl shadow-paper p-3 text-center">
-      <p className="font-body text-lg font-bold text-ink">{emoji} {value}</p>
+      <p className="font-body text-lg font-bold text-ink">
+        {emoji} <AnimatedCounter value={value} className="font-body text-lg font-bold text-ink" />
+      </p>
       <p className="font-body text-[10px] text-ink/40">{label}</p>
     </div>
   )
@@ -23,6 +28,7 @@ export default function PerfilPage() {
   const { currentUser, userProfile, setUserProfile, logout } = useAuth()
   const navigate = useNavigate()
   const [stats, setStats] = useState(null)
+  const [posts, setPosts] = useState([])
   const [editing, setEditing] = useState(false)
   const [nombre, setNombre] = useState(userProfile?.nombre || '')
   const [emoji, setEmoji] = useState(userProfile?.emoji || '😊')
@@ -30,14 +36,19 @@ export default function PerfilPage() {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getStats()
-      .then(setStats)
+    getPosts()
+      .then((p) => {
+        setPosts(p)
+        setStats(calcStats(p))
+      })
       .catch((err) => {
         console.error(err)
         setError('No se pudieron cargar tus estadisticas.')
       })
+      .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -80,31 +91,47 @@ export default function PerfilPage() {
 
   return (
     <div className="min-h-full bg-cream px-4 pt-6 pb-8">
-      <div className="flex flex-col items-center mb-8">
-        <motion.div
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-          onClick={() => setEditing(true)}
-          style={{ backgroundColor: `${color}22`, borderColor: color }}
-          className="w-24 h-24 rounded-full border-4 flex items-center justify-center cursor-pointer text-5xl mb-3"
-        >
-          {emoji}
-        </motion.div>
-        <h1 className="font-display text-2xl font-bold text-ink">{userProfile?.nombre || 'Tu perfil'}</h1>
-        <p className="font-body text-xs text-ink/40 mt-0.5">{currentUser?.email}</p>
-        <button onClick={() => setEditing(true)} className="flex items-center gap-1 mt-2 text-coral font-body text-xs font-medium">
-          <Edit3 size={12} /> Editar perfil
-        </button>
-      </div>
+      {loading ? (
+        <>
+          <SkeletonProfile />
+          <SkeletonStats />
+        </>
+      ) : (
+        <>
+          <div className="flex flex-col items-center mb-8">
+            <motion.div
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+              onClick={() => setEditing(true)}
+              style={{ backgroundColor: `${color}22`, borderColor: color }}
+              className="w-24 h-24 rounded-full border-4 flex items-center justify-center cursor-pointer text-5xl mb-3"
+            >
+              {emoji}
+            </motion.div>
+            <h1 className="font-display text-2xl font-bold text-ink">{userProfile?.nombre || 'Tu perfil'}</h1>
+            <p className="font-body text-xs text-ink/40 mt-0.5">{currentUser?.email}</p>
+            <button onClick={() => setEditing(true)} className="flex items-center gap-1 mt-2 text-coral font-body text-xs font-medium hover:text-coral-dark transition-colors">
+              <Edit3 size={12} /> Editar perfil
+            </button>
+          </div>
 
-      <InlineError message={error} className="mb-4" />
+          <InlineError message={error} className="mb-4" />
 
-      {stats && (
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <StatCard label="Retos" value={stats.total} emoji="🎯" />
-          <StatCard label="Racha" value={`${stats.racha}🔥`} emoji="" />
-          <StatCard label="Record" value={stats.rachaMax} emoji="⭐" />
-        </div>
+          {stats && (
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              <StatCard label="Retos" value={stats.total} emoji="🎯" />
+              <StatCard label="Racha" value={stats.racha} emoji="🔥" />
+              <StatCard label="Record" value={stats.rachaMax} emoji="⭐" />
+            </div>
+          )}
+
+          {/* Activity heatmap */}
+          {posts.length > 0 && (
+            <div className="mb-5">
+              <ActivityHeatmap posts={posts} />
+            </div>
+          )}
+        </>
       )}
 
       <AnimatePresence>
@@ -135,14 +162,15 @@ export default function PerfilPage() {
               </label>
               <div className="grid grid-cols-6 gap-2">
                 {EMOJIS.map(e => (
-                  <button
+                  <motion.button
                     key={e}
                     type="button"
+                    whileTap={{ scale: 0.85 }}
                     onClick={() => setEmoji(e)}
                     className={`aspect-square rounded-xl text-2xl flex items-center justify-center transition-all ${emoji === e ? 'bg-coral/20 ring-2 ring-coral scale-110' : 'bg-cream-dark hover:bg-cream'}`}
                   >
                     {e}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </div>
@@ -153,9 +181,10 @@ export default function PerfilPage() {
               </label>
               <div className="flex gap-2">
                 {COLORS.map(c => (
-                  <button
+                  <motion.button
                     key={c}
                     type="button"
+                    whileTap={{ scale: 0.85 }}
                     onClick={() => setColor(c)}
                     style={{ backgroundColor: c }}
                     className={`w-9 h-9 rounded-full flex-shrink-0 transition-all ${color === c ? 'ring-2 ring-offset-2 ring-ink scale-110' : 'hover:scale-105'}`}
@@ -169,7 +198,7 @@ export default function PerfilPage() {
               <motion.button
                 onClick={handleSave}
                 disabled={saving}
-                whileTap={{ scale: 0.97 }}
+                whileTap={{ scale: 0.93 }}
                 className="btn-primary flex-1 flex items-center justify-center gap-1"
               >
                 <Save size={16} />
@@ -192,7 +221,7 @@ export default function PerfilPage() {
       </div>
 
       <motion.button
-        whileTap={{ scale: 0.97 }}
+        whileTap={{ scale: 0.93 }}
         onClick={handleLogout}
         className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-100 text-red-400 font-body font-medium text-sm hover:bg-red-50 transition-colors"
       >

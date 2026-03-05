@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import confetti from 'canvas-confetti'
 import { Eye, Upload, Flame, Star } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { getRetoDiario, getPost, getFechaHoy, getPosts, calcStats } from '../services/firebaseService'
@@ -9,10 +10,10 @@ import { isGenericNombre, resolveNombreUsuario } from '../utils/user'
 import ModalRespuesta from '../components/ModalRespuesta'
 import ModalVerRespuestas from '../components/ModalVerRespuestas'
 import InlineError from '../components/ui/InlineError'
+import AnimatedCounter from '../components/ui/AnimatedCounter'
+import { SkeletonRetoCard, SkeletonStats } from '../components/ui/Skeleton'
 
 const BINGO_SEEN_KEY = 'retos_diarios_bingo_seen_date'
-
-
 
 function hasSeenBingoToday(fecha) {
   try {
@@ -26,6 +27,34 @@ function markBingoSeen(fecha) {
   try {
     localStorage.setItem(BINGO_SEEN_KEY, fecha)
   } catch {}
+}
+
+function getTimeGreeting() {
+  const h = new Date().getHours()
+  if (h < 7) return { text: 'Buenas noches', gradient: 'from-indigo-500/15 to-purple-500/10' }
+  if (h < 13) return { text: 'Buenos dias', gradient: 'from-mustard/20 to-coral/10' }
+  if (h < 20) return { text: 'Buenas tardes', gradient: 'from-coral/15 to-pink-400/10' }
+  return { text: 'Buenas noches', gradient: 'from-indigo-500/15 to-purple-500/10' }
+}
+
+function fireConfetti() {
+  const colors = ['#E8614A', '#F0B429', '#EC4899', '#7C3AED']
+  confetti({
+    particleCount: 80,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors,
+    disableForReducedMotion: true,
+  })
+  setTimeout(() => {
+    confetti({
+      particleCount: 40,
+      spread: 100,
+      origin: { y: 0.5, x: 0.3 },
+      colors,
+      disableForReducedMotion: true,
+    })
+  }, 300)
 }
 
 function BingoBall({ onDone }) {
@@ -68,11 +97,13 @@ function BingoBall({ onDone }) {
 
 function RetoCard({ retoDiario }) {
   const [flipped, setFlipped] = useState(false)
+  const [revealed, setRevealed] = useState(false)
   const cfg = CATEGORIA_CONFIG[retoDiario.categoria] || CATEGORIA_CONFIG.foto
 
   useEffect(() => {
-    const timer = setTimeout(() => setFlipped(true), 300)
-    return () => clearTimeout(timer)
+    const flipTimer = setTimeout(() => setFlipped(true), 300)
+    const revealTimer = setTimeout(() => setRevealed(true), 1200)
+    return () => { clearTimeout(flipTimer); clearTimeout(revealTimer) }
   }, [])
 
   return (
@@ -99,11 +130,24 @@ function RetoCard({ retoDiario }) {
             <Star size={16} className="text-mustard" fill="currentColor" />
           </div>
           <div className="flex-1 flex items-center my-4">
-            <p className="font-display text-xl font-medium text-ink leading-snug">{retoDiario.retoTexto}</p>
+            <motion.p
+              initial={{ filter: 'blur(12px)', opacity: 0.3 }}
+              animate={{ filter: revealed ? 'blur(0px)' : 'blur(12px)', opacity: revealed ? 1 : 0.3 }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className="font-display text-xl font-medium text-ink leading-snug"
+            >
+              {retoDiario.retoTexto}
+            </motion.p>
           </div>
           <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex-1 h-1 rounded-full bg-cream-dark" />
+              <motion.div
+                key={i}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 1.2 + i * 0.1, duration: 0.3 }}
+                className="flex-1 h-1 rounded-full bg-cream-dark origin-left"
+              />
             ))}
           </div>
           <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-coral/5" />
@@ -121,7 +165,7 @@ function StatusBadge({ label, emoji, done }) {
       <div className="flex-1 min-w-0">
         <p className="font-body text-xs font-medium truncate text-ink/60">{label}</p>
         <p className={`font-body text-xs font-semibold ${done ? 'text-emerald-600' : 'text-ink/30'}`}>
-          {done ? 'Completado' : 'Pendiente'}
+          {done ? 'Completado ✓' : 'Pendiente'}
         </p>
       </div>
     </div>
@@ -137,8 +181,10 @@ export default function HomePage() {
   const [showModal, setShowModal] = useState(false)
   const [showVerModal, setShowVerModal] = useState(false)
   const [error, setError] = useState('')
+  const [prevCompleto, setPrevCompleto] = useState(false)
 
   const fecha = getFechaHoy()
+  const greeting = getTimeGreeting()
 
   const loadData = useCallback(async (alive = { current: true }) => {
     try {
@@ -148,6 +194,14 @@ export default function HomePage() {
         getPosts(),
       ])
       if (!alive.current) return
+
+      // Fire confetti when both complete
+      const isCompleto = postData?.completadoTotal
+      if (isCompleto && !prevCompleto) {
+        fireConfetti()
+      }
+      setPrevCompleto(isCompleto)
+
       setRetoDiario(reto)
       setPost(postData)
       setStats(calcStats(postsAll))
@@ -157,7 +211,7 @@ export default function HomePage() {
       console.error(err)
       setError('No se pudo cargar el reto. Comprueba tu conexion.')
     }
-  }, [fecha])
+  }, [fecha, prevCompleto])
 
   useEffect(() => {
     const alive = { current: true }
@@ -197,18 +251,26 @@ export default function HomePage() {
 
   return (
     <div className="min-h-full bg-cream px-4 pt-6 pb-20 md:pb-2 relative flex flex-col">
-      <div className="flex items-center justify-between mb-6">
+      {/* Gradient header */}
+      <div className={`absolute inset-x-0 top-0 h-40 bg-gradient-to-b ${greeting.gradient} to-transparent pointer-events-none`} />
+
+      <div className="flex items-center justify-between mb-6 relative z-10">
         <div>
           <p className="font-body text-xs text-ink/40 uppercase tracking-wide">{formatFechaCabecera(new Date())}</p>
           <h1 className="font-display text-2xl font-bold text-ink">
-            Hola, {userProfile?.nombre || 'amor'} {userProfile?.emoji || '💛'}
+            {greeting.text}, {userProfile?.nombre || 'amor'} {userProfile?.emoji || '💛'}
           </h1>
         </div>
         {stats && (
-          <div className="flex items-center gap-1.5 bg-surface rounded-2xl px-3 py-2 shadow-paper">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20, delay: 0.3 }}
+            className="flex items-center gap-1.5 glass rounded-2xl px-3 py-2 shadow-paper"
+          >
             <Flame size={16} className="text-coral" />
-            <span className="font-body text-sm font-semibold text-ink">{stats.racha}</span>
-          </div>
+            <AnimatedCounter value={stats.racha} className="font-body text-sm font-semibold text-ink" />
+          </motion.div>
         )}
       </div>
 
@@ -216,13 +278,11 @@ export default function HomePage() {
 
       <AnimatePresence mode="wait">
         {stage === 'loading' && (
-          <motion.div key="loading" exit={{ opacity: 0 }}>
-            <div className="h-52 flex items-center justify-center">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-8 h-8 border-3 border-coral/30 border-t-coral rounded-full"
-              />
+          <motion.div key="loading" exit={{ opacity: 0 }} className="space-y-4">
+            <SkeletonRetoCard />
+            <div className="flex gap-3">
+              <div className="flex-1 bg-surface rounded-2xl p-3 animate-pulse h-16" />
+              <div className="flex-1 bg-surface rounded-2xl p-3 animate-pulse h-16" />
             </div>
           </motion.div>
         )}
@@ -249,7 +309,7 @@ export default function HomePage() {
 
             <div className="mt-5 space-y-3">
               <motion.button
-                whileTap={{ scale: 0.97 }}
+                whileTap={{ scale: 0.93 }}
                 onClick={() => setShowModal(true)}
                 className={`btn-primary w-full flex items-center justify-center gap-2 ${yaRespondi ? 'opacity-70' : ''}`}
               >
@@ -259,7 +319,7 @@ export default function HomePage() {
 
               {(yaRespondi || parejaRespondio) && (
                 <motion.button
-                  whileTap={{ scale: 0.97 }}
+                  whileTap={{ scale: 0.93 }}
                   onClick={() => setShowVerModal(true)}
                   className="btn-secondary w-full flex items-center justify-center gap-2"
                 >
@@ -277,10 +337,10 @@ export default function HomePage() {
                 className="mt-5 card text-center"
               >
                 <p className="font-body text-2xl">
-                  🔥 {stats.racha} {stats.racha === 1 ? 'dia' : 'dias'} seguidos
+                  🔥 <AnimatedCounter value={stats.racha} className="font-body text-2xl" /> {stats.racha === 1 ? 'dia' : 'dias'} seguidos
                 </p>
                 <p className="font-body text-xs text-ink/40 mt-1">
-                  {stats.total} retos completados juntos · Max: {stats.rachaMax} dias
+                  <AnimatedCounter value={stats.total} /> retos completados juntos · Max: <AnimatedCounter value={stats.rachaMax} /> dias
                 </p>
               </motion.div>
             )}
