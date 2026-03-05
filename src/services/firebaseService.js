@@ -10,6 +10,7 @@ import {
   orderBy,
   Timestamp,
   runTransaction,
+  deleteDoc,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage, isDemoMode } from '../firebase'
@@ -110,6 +111,7 @@ async function getRetosDisponibles() {
   const all = await getDocs(collection(db, 'retos'))
   if (all.empty) return []
 
+  console.info('[getRetosDisponibles] Todos los retos usados; reiniciando ciclo')
   await Promise.all(
     all.docs.map(d => updateDoc(d.ref, { usado: false, fechaUsado: null }))
   )
@@ -202,7 +204,6 @@ export async function deleteReto(id) {
     demoStore.deleteReto(id)
     return
   }
-  const { deleteDoc } = await import('firebase/firestore')
   await deleteDoc(doc(db, 'retos', id))
 }
 
@@ -224,13 +225,23 @@ export async function subirRespuesta(fecha, usuario, texto, archivos) {
   let fotosUrls = []
 
   if (!isDemoMode && archivos.length > 0) {
-    fotosUrls = await Promise.all(
+    const resultados = await Promise.allSettled(
       archivos.map(async (file) => {
         const storageRef = ref(storage, `posts/${fecha}/${usuario.uid}/${file.name}`)
         await uploadBytes(storageRef, file)
         return getDownloadURL(storageRef)
       })
     )
+
+    const ok = resultados.filter(r => r.status === 'fulfilled')
+    const fail = resultados.filter(r => r.status === 'rejected')
+    if (fail.length > 0) {
+      console.error(`[subirRespuesta] ${fail.length} archivo(s) no se pudieron subir`, fail)
+      if (ok.length === 0) {
+        throw new Error('No se pudieron subir los archivos a Storage')
+      }
+    }
+    fotosUrls = ok.map(r => r.value)
   }
 
   if (isDemoMode) {
@@ -244,11 +255,10 @@ export async function subirRespuesta(fecha, usuario, texto, archivos) {
     )
   }
 
-  const postRef = doc(db, 'posts', fecha)
-  const existing = await getDoc(postRef)
   const diario = await getRetoDiario()
+  const postRef = doc(db, 'posts', fecha)
 
-  const respuesta = {
+  const respuestaBase = {
     usuarioId: usuario.uid,
     usuarioNombre: getNombreUsuarioSeguro(usuario),
     emoji: usuario.emoji,
@@ -257,18 +267,24 @@ export async function subirRespuesta(fecha, usuario, texto, archivos) {
     fechaSubida: Timestamp.now(),
   }
 
-  if (existing.exists()) {
-    const data = existing.data()
-    const respuestas = data.respuestas.filter(r => r.usuarioId !== usuario.uid)
-    respuestas.push(respuesta)
-    const completadoPor = [...new Set([...(data.completadoPor || []), usuario.uid])]
-    await updateDoc(postRef, {
-      respuestas,
-      completadoPor,
-      completadoTotal: completadoPor.length >= 2,
-    })
-  } else {
-    await setDoc(postRef, {
+  await runTransaction(db, async (tx) => {
+    const existing = await tx.get(postRef)
+    const respuesta = { ...respuestaBase, fechaSubida: Timestamp.now() }
+
+    if (existing.exists()) {
+      const data = existing.data()
+      const respuestas = (data.respuestas || []).filter(r => r.usuarioId !== usuario.uid)
+      respuestas.push(respuesta)
+      const completadoPor = [...new Set([...(data.completadoPor || []), usuario.uid])]
+      tx.update(postRef, {
+        respuestas,
+        completadoPor,
+        completadoTotal: completadoPor.length >= 2,
+      })
+      return
+    }
+
+    tx.set(postRef, {
       retoId: diario.retoId,
       retoDiarioId: fecha,
       retoTexto: diario.retoTexto,
@@ -278,7 +294,7 @@ export async function subirRespuesta(fecha, usuario, texto, archivos) {
       completadoPor: [usuario.uid],
       completadoTotal: false,
     })
-  }
+  })
 
   return getPost(fecha)
 }

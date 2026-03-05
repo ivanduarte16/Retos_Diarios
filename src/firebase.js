@@ -1,12 +1,8 @@
-// Firebase configuration
-// Copy this file to .env.local and fill in your Firebase project values.
-// You can find these in Firebase Console → Project Settings → Your apps → SDK setup
-
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import {
-  getFirestore,
-  enableIndexedDbPersistence,
+  initializeFirestore,
+  persistentLocalCache,
 } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
@@ -19,32 +15,28 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-// Demo mode: if no Firebase project configured, use demo config
-const isDemoMode = !import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY === 'YOUR_API_KEY'
+const isDemoMode =
+  !import.meta.env.VITE_FIREBASE_API_KEY ||
+  import.meta.env.VITE_FIREBASE_API_KEY === 'YOUR_API_KEY'
 
-let app, auth, db, storage
-
-if (isDemoMode) {
-  // In demo mode we still initialize Firebase but will handle errors gracefully
-  const demoConfig = {
-    apiKey: 'demo-key',
-    authDomain: 'demo.firebaseapp.com',
-    projectId: 'demo-retos-diarios',
-    storageBucket: 'demo-retos-diarios.appspot.com',
-    messagingSenderId: '123456789',
-    appId: '1:123456789:web:abcdef',
-  }
-  app = initializeApp(demoConfig)
-} else {
-  app = initializeApp(firebaseConfig)
+const demoConfig = {
+  apiKey: 'demo-key',
+  authDomain: 'demo.firebaseapp.com',
+  projectId: 'demo-retos-diarios',
+  storageBucket: 'demo-retos-diarios.appspot.com',
+  messagingSenderId: '123456789',
+  appId: '1:123456789:web:abcdef',
 }
 
-auth = getAuth(app)
-db = getFirestore(app)
-storage = getStorage(app)
+const app = initializeApp(isDemoMode ? demoConfig : firebaseConfig)
+const auth = getAuth(app)
 
-// Enable offline persistence (ignore errors in demo mode)
-enableIndexedDbPersistence(db).catch(() => {})
+// Firebase recomienda la inicialización de caché persistente en initializeFirestore.
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache(),
+})
+
+const storage = getStorage(app)
 
 export { auth, db, storage, isDemoMode }
 export default app

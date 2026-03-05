@@ -1,15 +1,42 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Only allow access to the 2 registered users.
-    // Replace UID_1 and UID_2 with the real Firebase UIDs after creating the accounts.
-    function isAllowed() {
-      return request.auth != null && 
-             request.auth.uid in ['mw9F2XBgsgSNt0v3wgSmWDrIYD62', 'K2v0o3e6heW1laHh0PZ4SQ05juA3'];
+    // Usuarios autorizados de la app.
+    function isAllowedUser() {
+      return request.auth != null &&
+        request.auth.uid in [
+          'mw9F2XBgsgSNt0v3wgSmWDrIYD62',
+          'K2v0o3e6heW1laHh0PZ4SQ05juA3'
+        ];
     }
 
-    match /{document=**} {
-      allow read, write: if isAllowed();
+    // El perfil solo lo puede editar su propio dueño.
+    match /usuarios/{uid} {
+      allow read: if isAllowedUser();
+      allow write: if isAllowedUser() && request.auth.uid == uid;
+    }
+
+    // Retos: ambos usuarios pueden leer y marcar usados; solo el creador borra/edita su reto.
+    match /retos/{id} {
+      allow read: if isAllowedUser();
+      allow create: if isAllowedUser() &&
+        request.resource.data.creadoPor == request.auth.uid;
+      allow update: if isAllowedUser() &&
+        (
+          resource.data.creadoPor == request.auth.uid ||
+          request.resource.data.creadoPor == resource.data.creadoPor
+        );
+      allow delete: if isAllowedUser() && resource.data.creadoPor == request.auth.uid;
+    }
+
+    // Reto diario: ambos usuarios pueden leer/escribir (la app crea el reto del dia desde cliente).
+    match /reto_diario/{fecha} {
+      allow read, write: if isAllowedUser();
+    }
+
+    // Posts: ambos usuarios pueden leer/escribir respuestas.
+    match /posts/{fecha} {
+      allow read, write: if isAllowedUser();
     }
   }
 }
